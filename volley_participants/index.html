@@ -12,7 +12,7 @@
       <h1>バレーボール参加管理</h1>
       <div class="header-actions">
         <a class="header-link-btn" id="bulkRegisterLink" href="#" target="_blank" rel="noopener">一括登録</a>
-        <button type="button" class="refresh-btn" id="refreshCalendarBtn">更新</button>
+        <button type="button" class="refresh-btn" id="refreshCalendarBtn" title="スプレッドシートから再取得">更新</button>
         <div id="refreshSpinner" class="header-refresh-spinner" style="display:none;" aria-hidden="true"></div>
       </div>
     </div>
@@ -28,6 +28,8 @@
     </div>
     <div id="calendarArea" class="calendars" style="display:none;"></div>
   </main>
+
+  <footer class="site-footer">データは Google スプレッドシートから取得しています。</footer>
 
   <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-labelledby="modalTitle">
@@ -59,6 +61,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="spreadsheet-loader.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

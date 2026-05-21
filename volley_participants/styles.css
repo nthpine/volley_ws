@@ -115,6 +115,15 @@
       padding: 1rem;
     }
 
+    .site-footer {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 1rem 1.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
     .loading-panel {
       display: flex;
       flex-direction: column;

@@ -57,11 +57,6 @@
     return !(data && data.schedules && data.schedules.length > 0);
   }
 
-  function repoDataUrl() {
-    var base = CONFIG.DATA_URL || './data/calendar.json';
-    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
-  }
-
   function initCalendarOnLoad() {
     var raw = null;
     try {
@@ -94,10 +89,7 @@
         return;
       }
     }
-    loadCalendar({
-      showFullLoading: true,
-      preferLive: !!CONFIG.LIVE_EXPORT_URL,
-    });
+    loadCalendar({ showFullLoading: true, skipCache: false });
   }
 
   function showCachedShellUI() {
@@ -138,24 +130,7 @@
   }
 
   function onRefreshCalendarClick() {
-    loadCalendar({ showFullLoading: false, preferLive: true });
-  }
-
-  function resolveFetchUrl(opts) {
-    opts = opts || {};
-    if (opts.preferLive && CONFIG.LIVE_EXPORT_URL) {
-      return CONFIG.LIVE_EXPORT_URL;
-    }
-    return repoDataUrl();
-  }
-
-  function fetchCalendarJson(url) {
-    return fetch(url, { cache: 'no-store', mode: 'cors' }).then(function (res) {
-      if (!res.ok) {
-        throw new Error('データ取得に失敗しました (' + res.status + ')');
-      }
-      return res.json();
-    });
+    loadCalendar({ showFullLoading: false, skipCache: true });
   }
 
   function finishLoadCalendar(data, opts) {
@@ -171,40 +146,6 @@
     }
   }
 
-  function tryFetchLiveThenRepo(opts, onFinalError) {
-    if (!CONFIG.LIVE_EXPORT_URL) {
-      return fetchCalendarJson(repoDataUrl())
-        .then(function (data) {
-          finishLoadCalendar(data, opts);
-        })
-        .catch(onFinalError);
-    }
-    return fetchCalendarJson(CONFIG.LIVE_EXPORT_URL)
-      .then(function (data) {
-        if (isCalendarDataEmpty(data)) {
-          return fetchCalendarJson(repoDataUrl()).then(function (repoData) {
-            if (!isCalendarDataEmpty(repoData)) {
-              finishLoadCalendar(repoData, opts);
-            } else {
-              finishLoadCalendar(data, opts);
-            }
-          });
-        }
-        finishLoadCalendar(data, opts);
-      })
-      .catch(function () {
-        return fetchCalendarJson(repoDataUrl())
-          .then(function (data) {
-            finishLoadCalendar(data, opts);
-            if (opts.showFullLoading) {
-              document.getElementById('lastUpdatedLabel').textContent =
-                'ライブ取得に失敗したため GitHub の JSON を表示しています';
-            }
-          })
-          .catch(onFinalError);
-      });
-  }
-
   function loadCalendar(opts) {
     opts = opts || {};
     if (opts.showFullLoading) {
@@ -212,39 +153,23 @@
     }
     setRefreshLoading(true);
 
-    function onFinalError(err) {
+    if (typeof loadVolleyCalendarBundle !== 'function') {
       setRefreshLoading(false);
-      if (opts.showFullLoading) {
-        onError(err);
-      } else {
-        onRefreshError(err);
-      }
-    }
-
-    if (opts.preferLive) {
-      tryFetchLiveThenRepo(opts, onFinalError);
+      onError(new Error('spreadsheet-loader.js が読み込まれていません。'));
       return;
     }
 
-    fetchCalendarJson(repoDataUrl())
+    loadVolleyCalendarBundle({ skipCache: !!opts.skipCache })
       .then(function (data) {
-        if (isCalendarDataEmpty(data) && CONFIG.LIVE_EXPORT_URL) {
-          return tryFetchLiveThenRepo(
-            Object.assign({}, opts, { preferLive: true }),
-            onFinalError
-          );
-        }
         finishLoadCalendar(data, opts);
       })
       .catch(function (err) {
-        if (CONFIG.LIVE_EXPORT_URL) {
-          tryFetchLiveThenRepo(
-            Object.assign({}, opts, { preferLive: true }),
-            onFinalError
-          );
-          return;
+        setRefreshLoading(false);
+        if (opts.showFullLoading) {
+          onError(err);
+        } else {
+          onRefreshError(err);
         }
-        onFinalError(err);
       });
   }
 

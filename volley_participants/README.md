@@ -1,133 +1,92 @@
-# volley_participants
+# volley_participants（閲覧サイト）
 
-バレーボール参加管理の **閲覧専用** サイト（GitHub Pages）です。カレンダーと参加者一覧を表示し、登録・変更は GAS の一括登録ページで行います。
+バレーボール参加管理の **閲覧専用** サイト（GitHub Pages）です。  
+[basket spreadsheet-viewer](../basket_ws/spreadsheet-viewer) と同様、**公開スプレッドシートを gviz CSV で直接読み** カレンダーと参加者一覧を表示します。
 
 | 用途 | URL |
 |------|-----|
-| 閲覧（`volley_ws` リポジトリ） | https://nthpine.github.io/volley_ws/volley_participants/ |
-| 一括登録・変更（GAS） | `config.js` の `BULK_REGISTER_URL`（Web アプリ exec URL） |
+| 閲覧 | https://nthpine.github.io/volley_ws/volley_participants/ |
+| 一括登録・変更 | `config.js` の `BULK_REGISTER_URL`（GAS Web アプリ） |
 
-データの正本はリポジトリ内の [`data/calendar.json`](data/calendar.json) です。GAS の `?action=export` と GitHub Actions で更新します。
+**誰かがシート（または GAS 一括登録）で参加状況を更新すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。** GitHub Actions や `calendar.json` の手動同期は不要です。
 
 ---
 
-## 初回セットアップ
+## 前提（必須）
 
-### 1. GitHub リポジトリ
+参加管理スプレッドシート（`CONFIG.SPREADSHEET_ID`）を次の設定にしてください。
 
-`volley_ws` リポジトリの **ルート** に push 済みの場合（推奨・現状）:
+1. **共有**: 「リンクを知っている全員が**閲覧者**」  
+   （バスケの record シートと同じ。編集は GAS のみでも可）
+2. シート名: `schedules` / `participants` / `members` / `config`（[`config.js`](config.js) と一致）
+
+### 動作確認（デプロイ前）
+
+ブラウザで次を開き、**CSV らしい文字列**（HTML ログイン画面ではない）が表示されること:
+
+```text
+https://docs.google.com/spreadsheets/d/13bYkVraCvuwbf2cCCGhXfAmfVtZ3znbv7fdq-anxovU/gviz/tq?tqx=out:csv&sheet=schedules
+https://docs.google.com/spreadsheets/d/13bYkVraCvuwbf2cCCGhXfAmfVtZ3znbv7fdq-anxovU/gviz/tq?tqx=out:csv&sheet=participants
+```
+
+失敗する場合は共有設定またはシート名を見直してください。
+
+---
+
+## データの流れ
+
+```text
+閲覧サイト → docs.google.com (gviz CSV) → スプレッドシート
+一括登録   → GAS Web アプリ → スプレッドシート（書き込み）
+```
+
+- 初回表示: スプレッドシートから取得（IndexedDB に最大 10 分キャッシュ）
+- 「更新」ボタン: キャッシュを無視して再取得
+- 一括登録後: 閲覧サイトで「更新」または再読み込みで反映
+
+---
+
+## GitHub Pages 公開
+
+リポジトリ [`nthpine/volley_ws`](https://github.com/nthpine/volley_ws) のルートから公開します。
+
+1. **Settings → Pages** → Branch: `main` / Folder: `/ (root)`
+2. 閲覧 URL: https://nthpine.github.io/volley_ws/volley_participants/
 
 ```bash
-cd volley_ws   # リポジトリのルート（volley_participants の親）
-git add .
-git commit -m "fix: Pages 用 index と Actions パスを修正"
+cd volley_ws
+git add volley_participants/
+git commit -m "feat: gviz CSV でスプレッドシートから直接読み込み"
 git push
 ```
 
-閲覧 URL: **https://nthpine.github.io/volley_ws/volley_participants/**  
-（ルート https://nthpine.github.io/volley_ws/ は `index.html` から自動でここへ飛びます）
-
-### 2. GitHub Pages
-
-1. リポジトリ **nthpine/volley_ws** の **Settings → Pages**
-2. **Source**: Deploy from a branch
-3. **Branch**: `main` / **Folder**: `/ (root)`
-4. 保存後、数分で上記 URL が開きます
-
-### 3. Actions 用シークレット
-
-1. **Settings → Secrets and variables → Actions → New repository secret**
-2. 名前: `VOLLEY_EXPORT_URL`
-3. 値: GAS Web アプリの exec URL に `?action=export` を付けたもの
-
-例:
-
-```text
-https://script.google.com/macros/s/xxxxxxxx/exec?action=export
-```
-
-`config.js` の `LIVE_EXPORT_URL` と同じ URL にしてください。
-
-### 4. 初回 JSON の投入
-
-次のいずれかで `data/calendar.json` を埋めます。
-
-**A. GitHub Actions（推奨）**
-
-1. 上記シークレットを設定したあと
-2. **Actions → Sync calendar → Run workflow**
-
-**B. 手動**
-
-1. GAS エディタで `exportCalendarJsonForPages` を実行するか、ブラウザで export URL を開く
-2. 出力 JSON を `data/calendar.json` に保存して commit & push
-
-**C. clasp（ローカル）**
-
-```bash
-cd ../volley_gas
-clasp run exportCalendarJsonForPages
-# 出力を data/calendar.json にコピーして commit
-```
-
 ---
 
-## GAS 側（volley_gas）のデプロイ
+## GAS（一括登録）
 
-`doGet` のルーティング変更を反映するため、**新バージョン**で Web アプリを再デプロイしてください。
+[`volley_gas`](../volley_gas/) の `BulkIndex.html` が一括登録 UI です。`clasp push` のあと Web アプリを **新バージョン**で再デプロイしてください。
 
-```bash
-cd ../volley_gas
-clasp push
-```
-
-Apps Script コンソール:
-
-1. **デプロイ → デプロイを管理**
-2. 既存の Web アプリ → **編集** → バージョン **新規** → **デプロイ**
-
-| `?action=` | 内容 |
-|------------|------|
-| `export` | Pages 用 JSON |
-| （省略） | 一括登録 UI（`BulkIndex.html`） |
-
-再デプロイ後、`config.js` の URL が変わった場合は `LIVE_EXPORT_URL` / `BULK_REGISTER_URL` とシークレット `VOLLEY_EXPORT_URL` を更新してください。
-
----
-
-## 運用
-
-| 操作 | 説明 |
-|------|------|
-| 初回表示 | `LIVE_EXPORT_URL` があれば GAS から自動取得（更新ボタン不要）。失敗時は GitHub の `calendar.json` |
-| 閲覧サイトの「更新」 | `LIVE_EXPORT_URL` から最新 JSON を取得し、端末の localStorage を更新（Actions 待ち不要） |
-| Actions「Sync calendar」 | リポジトリの `calendar.json` を更新（全員に反映） |
-| cron | 1 時間ごとに自動同期（`sync-calendar.yml`） |
-
-**注意**: Pages の `calendar.json` は Actions が走るまで古い場合があります。すぐ最新が必要なときは閲覧サイトの「更新」を使うか、Actions の頻度を上げてください。一括登録直後は Actions を手動実行するか、「更新」でライブ取得してください。
-
----
-
-## ローカル確認
-
-静的ファイルのみのため、簡易サーバーで確認できます。
-
-```bash
-npx --yes serve .
-# http://localhost:3000 を開く
-```
-
-`data/calendar.json` が空のときはカレンダーが空です。export URL または Actions で JSON を用意してください。
+`?action=export`（JSON エクスポート）は閲覧サイトでは **使いません**（予約同期 API 等で残している場合あり）。
 
 ---
 
 ## ファイル構成
 
 ```text
-index.html          閲覧 UI
-app.js              カレンダー描画・モーダル（JSON の participantsByGroup を使用）
-styles.css          スタイル
-config.js           DATA_URL / LIVE_EXPORT_URL / BULK_REGISTER_URL
-data/calendar.json  正本データ
-.github/workflows/sync-calendar.yml
+volley_participants/
+  index.html
+  config.js              SPREADSHEET_ID, シート名, BULK_REGISTER_URL
+  spreadsheet-loader.js    gviz 取得 + カレンダー組み立て
+  app.js                   UI（カレンダー・モーダル）
+  styles.css
 ```
+
+---
+
+## ローカル確認
+
+```bash
+npx --yes serve volley_participants
+```
+
+※ スプレッドシートが閲覧可である必要があります。
