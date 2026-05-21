@@ -42,7 +42,12 @@
       .trimStart();
     if (!t || t.startsWith('<') || t.startsWith('<!')) return false;
     if (t.length < 2) return false;
-    return t.includes(',') || t.includes('\t');
+    if (t.includes(',') || t.includes('\t')) return true;
+    // gviz の1列シート（members など）: "名前"\n"かずま" … のようにカンマが無い
+    var lines = t.split(/\r?\n/).filter(function (line) {
+      return String(line).trim() !== '';
+    });
+    return lines.length >= 1;
   }
 
   function parseCSV(text) {

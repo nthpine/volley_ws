@@ -226,6 +226,7 @@
         : '';
       return;
     }
+    el.textContent = '';
   }
 
   function formatCacheSavedAt(iso) {
