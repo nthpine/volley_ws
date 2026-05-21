@@ -1,0 +1,38 @@
+name: Sync calendar
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch calendar JSON from GAS
+        env:
+          VOLLEY_EXPORT_URL: ${{ secrets.VOLLEY_EXPORT_URL }}
+        run: |
+          if [ -z "$VOLLEY_EXPORT_URL" ]; then
+            echo "::error::Repository secret VOLLEY_EXPORT_URL is not set."
+            exit 1
+          fi
+          curl -fsSL "$VOLLEY_EXPORT_URL" -o volley_participants/data/calendar.json
+          python3 -c "import json; json.load(open('volley_participants/data/calendar.json'))"
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add volley_participants/data/calendar.json
+          if git diff --staged --quiet; then
+            echo "No changes to calendar.json"
+            exit 0
+          fi
+          git commit -m "chore: sync calendar.json from GAS export"
+          git push

@@ -4,7 +4,7 @@
 
 | 用途 | URL |
 |------|-----|
-| 閲覧（このリポジトリ） | https://nthpine.github.io/volley_participants/ |
+| 閲覧（`volley_ws` リポジトリ） | https://nthpine.github.io/volley_ws/volley_participants/ |
 | 一括登録・変更（GAS） | `config.js` の `BULK_REGISTER_URL`（Web アプリ exec URL） |
 
 データの正本はリポジトリ内の [`data/calendar.json`](data/calendar.json) です。GAS の `?action=export` と GitHub Actions で更新します。
@@ -15,21 +15,24 @@
 
 ### 1. GitHub リポジトリ
 
+`volley_ws` リポジトリの **ルート** に push 済みの場合（推奨・現状）:
+
 ```bash
-cd volley_participants
-git init
-git remote add origin https://github.com/nthpine/volley_participants.git
+cd volley_ws   # リポジトリのルート（volley_participants の親）
 git add .
-git commit -m "feat: GitHub Pages 閲覧サイトを追加"
-git push -u origin main
+git commit -m "fix: Pages 用 index と Actions パスを修正"
+git push
 ```
+
+閲覧 URL: **https://nthpine.github.io/volley_ws/volley_participants/**  
+（ルート https://nthpine.github.io/volley_ws/ は `index.html` から自動でここへ飛びます）
 
 ### 2. GitHub Pages
 
-1. リポジトリ **Settings → Pages**
+1. リポジトリ **nthpine/volley_ws** の **Settings → Pages**
 2. **Source**: Deploy from a branch
 3. **Branch**: `main` / **Folder**: `/ (root)`
-4. 保存後、数分で https://nthpine.github.io/volley_participants/ が公開されます
+4. 保存後、数分で上記 URL が開きます
 
 ### 3. Actions 用シークレット
 
