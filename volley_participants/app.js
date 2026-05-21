@@ -226,8 +226,6 @@
         : '';
       return;
     }
-    var prefix = fromCache ? '表示中（保存済み）: ' : '最終更新: ';
-    el.textContent = prefix + formatCacheSavedAt(savedAt);
   }
 
   function formatCacheSavedAt(iso) {
