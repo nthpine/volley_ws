@@ -99,6 +99,7 @@ Apps Script コンソール:
 
 | 操作 | 説明 |
 |------|------|
+| 初回表示 | `LIVE_EXPORT_URL` があれば GAS から自動取得（更新ボタン不要）。失敗時は GitHub の `calendar.json` |
 | 閲覧サイトの「更新」 | `LIVE_EXPORT_URL` から最新 JSON を取得し、端末の localStorage を更新（Actions 待ち不要） |
 | Actions「Sync calendar」 | リポジトリの `calendar.json` を更新（全員に反映） |
 | cron | 1 時間ごとに自動同期（`sync-calendar.yml`） |
