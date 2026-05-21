@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>バレーボール参加管理（閲覧）</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <h1>バレーボール参加管理</h1>
+      <div class="header-actions">
+        <a class="header-link-btn" id="bulkRegisterLink" href="#" target="_blank" rel="noopener">一括登録</a>
+        <button type="button" class="refresh-btn" id="refreshCalendarBtn">更新</button>
+        <div id="refreshSpinner" class="header-refresh-spinner" style="display:none;" aria-hidden="true"></div>
+      </div>
+    </div>
+    <p id="periodLabel">読み込み中…</p>
+    <p id="lastUpdatedLabel" class="last-updated-label"></p>
+  </header>
+
+  <main>
+    <div id="errorArea"></div>
+    <div id="loadingArea" class="loading-panel" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>カレンダーを読み込んでいます…</p>
+    </div>
+    <div id="calendarArea" class="calendars" style="display:none;"></div>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-header-top">
+          <div>
+            <div class="modal-title-row">
+              <h2 id="modalTitle">詳細</h2>
+              <span id="modalTimeSlot" class="modal-time-slot"></span>
+            </div>
+            <div class="meta grouped-meta" id="modalMeta"></div>
+            <div id="orgDetailPanel" class="org-detail-panel" aria-live="polite"></div>
+            <p id="modalScheduleRemark" class="schedule-remark"></p>
+          </div>
+          <button type="button" class="close-btn" id="closeModalBtn" aria-label="閉じる">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p id="modalCount" style="font-weight:600;margin-top:0;"></p>
+        <h3 style="font-size:0.95rem;margin:0 0 0.25rem;">参加者一覧</h3>
+        <p class="form-hint" style="margin-top:0;margin-bottom:0.5rem;color:var(--muted);font-size:0.85rem;">
+          登録・変更は「一括登録」から行えます
+        </p>
+        <ul id="participantList" class="participant-list readonly"></ul>
+        <p id="emptyParticipants" class="empty-participants" style="display:none;">まだ登録がありません</p>
+        <p id="modalFormMessage" class="form-message"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
