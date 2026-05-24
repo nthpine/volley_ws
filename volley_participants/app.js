@@ -90,11 +90,11 @@
         });
       }
     }
-    if (showedLocalCache) {
-      loadCalendar({ showFullLoading: false, skipCache: true });
-    } else {
-      loadCalendar({ showFullLoading: true, skipCache: false });
-    }
+    // F5 などページ再読み込みのたびにスプレッドシートから取得（IndexedDB は使わない）
+    loadCalendar({
+      showFullLoading: !showedLocalCache,
+      skipCache: true,
+    });
   }
 
   function showCachedShellUI() {
