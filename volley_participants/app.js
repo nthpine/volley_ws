@@ -58,6 +58,7 @@
   }
 
   function initCalendarOnLoad() {
+    var showedLocalCache = false;
     var raw = null;
     try {
       raw = localStorage.getItem(CALENDAR_CACHE_KEY);
@@ -72,8 +73,9 @@
         cached = null;
       }
       if (cached && cached.data && !isCalendarDataEmpty(cached.data)) {
+        showedLocalCache = true;
         showCachedShellUI();
-        document.getElementById('lastUpdatedLabel').textContent = '表示を復元しています…';
+        document.getElementById('lastUpdatedLabel').textContent = '最新データを取得しています…';
         var run =
           window.requestAnimationFrame ||
           function (fn) {
@@ -86,10 +88,13 @@
             quiet: true,
           });
         });
-        return;
       }
     }
-    loadCalendar({ showFullLoading: true, skipCache: false });
+    if (showedLocalCache) {
+      loadCalendar({ showFullLoading: false, skipCache: true });
+    } else {
+      loadCalendar({ showFullLoading: true, skipCache: false });
+    }
   }
 
   function showCachedShellUI() {
@@ -198,10 +203,25 @@
     document.getElementById('loadingArea').style.display = 'none';
     document.getElementById('calendarArea').style.display = 'grid';
     renderCalendars();
+    refreshModalIfOpen();
 
     if (!options.quiet) {
       showLoading(false);
     }
+  }
+
+  function refreshModalIfOpen() {
+    if (!STATE.currentScheduleId) {
+      return;
+    }
+    var local = STATE.schedules.find(function (s) {
+      return s.scheduleId === STATE.currentScheduleId;
+    });
+    if (!local) {
+      return;
+    }
+    STATE.detailSiblings = getSchedulesInSameTimeGroup(local);
+    renderDetailFromSnapshot(local);
   }
 
   function saveCalendarCache(data) {
@@ -221,12 +241,14 @@
   function updateLastUpdatedLabel(savedAt, fromCache) {
     var el = document.getElementById('lastUpdatedLabel');
     if (!savedAt) {
-      el.textContent = fromCache
-        ? '保存済みの表示（「更新」で最新を取得）'
-        : '';
+      el.textContent = fromCache ? 'キャッシュ表示（取得中…）' : '';
       return;
     }
-    el.textContent = '';
+    if (fromCache) {
+      el.textContent = '最終取得: ' + formatCacheSavedAt(savedAt) + '（更新中…）';
+      return;
+    }
+    el.textContent = '最終取得: ' + formatCacheSavedAt(savedAt);
   }
 
   function formatCacheSavedAt(iso) {
