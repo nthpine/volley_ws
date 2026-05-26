@@ -134,11 +134,6 @@
     return STATE.schedulesByDay[dayIndexKey(year, month, day)] || [];
   }
 
-  function shiftCalendarMonth(year, month, delta) {
-    var d = new Date(year, month - 1 + delta, 1);
-    return { year: d.getFullYear(), month: d.getMonth() + 1 };
-  }
-
   function getSchedulesForCardDay(cellYear, cellMonth, day, cardYear, cardMonth) {
     if (cellYear !== cardYear || cellMonth !== cardMonth) {
       return [];
@@ -474,16 +469,12 @@
     var startPad = first.getDay();
     var daysInMonth = new Date(year, month, 0).getDate();
 
-    var prevMonth = shiftCalendarMonth(year, month, -1);
-    var prevMonthDays = new Date(year, month - 1, 0).getDate();
-    for (var p = startPad - 1; p >= 0; p--) {
-      daysGrid.appendChild(
-        createDayCell(prevMonth.year, prevMonth.month, prevMonthDays - p, true, year, month)
-      );
-    }
-
     for (var d = 1; d <= daysInMonth; d++) {
-      daysGrid.appendChild(createDayCell(year, month, d, false, year, month));
+      var cell = createDayCell(year, month, d, false, year, month);
+      if (d === 1 && startPad > 0) {
+        cell.style.gridColumnStart = String(startPad + 1);
+      }
+      daysGrid.appendChild(cell);
     }
 
     card.appendChild(daysGrid);
