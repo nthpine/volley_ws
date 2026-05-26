@@ -271,7 +271,27 @@
     var now = new Date();
     var start = new Date(now.getFullYear(), now.getMonth(), 1);
     var end = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
-    return { start: start, end: end };
+    var next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return {
+      start: start,
+      end: end,
+      displayMonths: [
+        { year: now.getFullYear(), month: now.getMonth() + 1 },
+        { year: next.getFullYear(), month: next.getMonth() + 1 },
+      ],
+    };
+  }
+
+  function isScheduleInDisplayMonths(year, month, displayMonths) {
+    var y = Number(year);
+    var m = Number(month);
+    for (var i = 0; i < displayMonths.length; i++) {
+      var dm = displayMonths[i];
+      if (dm.year === y && dm.month === m) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function parseScheduleDateInRange(dateLabel, rangeStart, rangeEnd) {
@@ -551,7 +571,8 @@
     configMap,
     countsByTimeGroup,
     schedRows,
-    schedHeaders
+    schedHeaders,
+    displayMonths
   ) {
     if (!schedRows || schedRows.length < 2) return [];
     var headers = schedHeaders;
@@ -567,6 +588,11 @@
       var dateLabel = String(row[idxDate] || '').trim();
       var eventDate = parseScheduleDateInRange(dateLabel, rangeStart, rangeEnd);
       if (!eventDate) continue;
+      var eventYear = eventDate.getFullYear();
+      var eventMonth = eventDate.getMonth() + 1;
+      if (displayMonths && !isScheduleInDisplayMonths(eventYear, eventMonth, displayMonths)) {
+        continue;
+      }
       var base = buildScheduleObject(row, headers, configMap);
       var gKey = scheduleTimeGroupKey(dateLabel, base.timeSlot);
       var counts = countsByTimeGroup[gKey] || {
@@ -581,8 +607,8 @@
         scheduleId: base.scheduleId,
         dateIso: formatDateIso(eventDate),
         dateLabel: dateLabel,
-        year: eventDate.getFullYear(),
-        month: eventDate.getMonth() + 1,
+        year: eventYear,
+        month: eventMonth,
         day: eventDate.getDate(),
         location: base.location,
         court: base.court,
@@ -624,7 +650,8 @@
       configMap,
       countsByTimeGroup,
       schedRows,
-      schedHeaders
+      schedHeaders,
+      range.displayMonths
     );
     return {
       generatedAt: new Date().toISOString(),

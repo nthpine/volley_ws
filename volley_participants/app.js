@@ -134,6 +134,20 @@
     return STATE.schedulesByDay[dayIndexKey(year, month, day)] || [];
   }
 
+  function shiftCalendarMonth(year, month, delta) {
+    var d = new Date(year, month - 1 + delta, 1);
+    return { year: d.getFullYear(), month: d.getMonth() + 1 };
+  }
+
+  function getSchedulesForCardDay(cellYear, cellMonth, day, cardYear, cardMonth) {
+    if (cellYear !== cardYear || cellMonth !== cardMonth) {
+      return [];
+    }
+    return getSchedulesForDay(cellYear, cellMonth, day).filter(function (s) {
+      return s.year === cardYear && s.month === cardMonth;
+    });
+  }
+
   function onRefreshCalendarClick() {
     loadCalendar({ showFullLoading: false, skipCache: true });
   }
@@ -460,19 +474,23 @@
     var startPad = first.getDay();
     var daysInMonth = new Date(year, month, 0).getDate();
 
+    var prevMonth = shiftCalendarMonth(year, month, -1);
     var prevMonthDays = new Date(year, month - 1, 0).getDate();
     for (var p = startPad - 1; p >= 0; p--) {
-      daysGrid.appendChild(createDayCell(year, month, prevMonthDays - p, true));
+      daysGrid.appendChild(
+        createDayCell(prevMonth.year, prevMonth.month, prevMonthDays - p, true, year, month)
+      );
     }
 
     for (var d = 1; d <= daysInMonth; d++) {
-      daysGrid.appendChild(createDayCell(year, month, d, false));
+      daysGrid.appendChild(createDayCell(year, month, d, false, year, month));
     }
 
+    var nextMonth = shiftCalendarMonth(year, month, 1);
     var totalCells = startPad + daysInMonth;
     var remainder = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
     for (var n = 1; n <= remainder; n++) {
-      daysGrid.appendChild(createDayCell(year, month + 1, n, true));
+      daysGrid.appendChild(createDayCell(nextMonth.year, nextMonth.month, n, true, year, month));
     }
 
     card.appendChild(daysGrid);
@@ -490,7 +508,7 @@
     return 'future';
   }
 
-  function createDayCell(year, month, day, isOther) {
+  function createDayCell(year, month, day, isOther, cardYear, cardMonth) {
     var cell = document.createElement('div');
     var classes = ['day-cell'];
     if (isOther) {
@@ -514,8 +532,8 @@
     num.textContent = day;
     cell.appendChild(num);
 
-    if (!isOther) {
-      var events = getSchedulesForDay(year, month, day);
+    if (!isOther && year === cardYear && month === cardMonth) {
+      var events = getSchedulesForCardDay(year, month, day, cardYear, cardMonth);
       if (events.length) {
         groupSchedulesForDisplay(events).forEach(function (group) {
           cell.appendChild(createTimeGroupChip(group));
