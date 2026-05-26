@@ -486,13 +486,6 @@
       daysGrid.appendChild(createDayCell(year, month, d, false, year, month));
     }
 
-    var nextMonth = shiftCalendarMonth(year, month, 1);
-    var totalCells = startPad + daysInMonth;
-    var remainder = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-    for (var n = 1; n <= remainder; n++) {
-      daysGrid.appendChild(createDayCell(nextMonth.year, nextMonth.month, n, true, year, month));
-    }
-
     card.appendChild(daysGrid);
     return card;
   }
