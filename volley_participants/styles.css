@@ -103,12 +103,6 @@
       opacity: 0.9;
     }
 
-    .last-updated-label {
-      margin: 0.15rem 0 0;
-      font-size: 0.78rem;
-      opacity: 0.82;
-    }
-
     main {
       max-width: 960px;
       margin: 0 auto;
@@ -408,6 +402,29 @@
       font-weight: 600;
       line-height: 1.15;
       letter-spacing: -0.02em;
+    }
+
+    .event-chip .chip-loc-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 2px;
+      max-width: 100%;
+    }
+
+    .event-chip .chip-loc-line + .chip-loc-line {
+      margin-top: 2px;
+    }
+
+    .event-chip .chip-loc-pin {
+      width: 0.85em;
+      height: 0.85em;
+      flex-shrink: 0;
+      margin-top: 0.05em;
+      color: inherit;
+    }
+
+    .event-chip .chip-loc-text {
+      min-width: 0;
       word-break: break-all;
       overflow-wrap: anywhere;
     }

@@ -75,7 +75,6 @@
       if (cached && cached.data && !isCalendarDataEmpty(cached.data)) {
         showedLocalCache = true;
         showCachedShellUI();
-        document.getElementById('lastUpdatedLabel').textContent = '最新データを取得しています…';
         var run =
           window.requestAnimationFrame ||
           function (fn) {
@@ -207,7 +206,11 @@
       document.getElementById('periodLabel').textContent = '参加カレンダー';
     }
 
-    updateLastUpdatedLabel(options.savedAt, options.fromCache);
+    var errorArea = document.getElementById('errorArea');
+    if (errorArea && !options.fromCache) {
+      errorArea.className = '';
+      errorArea.textContent = '';
+    }
 
     document.getElementById('loadingArea').style.display = 'none';
     document.getElementById('calendarArea').style.display = 'grid';
@@ -247,32 +250,6 @@
     }
   }
 
-  function updateLastUpdatedLabel(savedAt, fromCache) {
-    var el = document.getElementById('lastUpdatedLabel');
-    if (!savedAt) {
-      el.textContent = fromCache ? 'キャッシュ表示（取得中…）' : '';
-      return;
-    }
-    if (fromCache) {
-      el.textContent = '最終取得: ' + formatCacheSavedAt(savedAt) + '（更新中…）';
-      return;
-    }
-    el.textContent = '最終取得: ' + formatCacheSavedAt(savedAt);
-  }
-
-  function formatCacheSavedAt(iso) {
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) {
-      return String(iso);
-    }
-    var y = d.getFullYear();
-    var m = ('0' + (d.getMonth() + 1)).slice(-2);
-    var day = ('0' + d.getDate()).slice(-2);
-    var h = ('0' + d.getHours()).slice(-2);
-    var min = ('0' + d.getMinutes()).slice(-2);
-    return y + '/' + m + '/' + day + ' ' + h + ':' + min;
-  }
-
   function setRefreshLoading(show) {
     var btn = document.getElementById('refreshCalendarBtn');
     var spinner = document.getElementById('refreshSpinner');
@@ -281,9 +258,10 @@
   }
 
   function onRefreshError(err) {
-    var el = document.getElementById('lastUpdatedLabel');
+    var area = document.getElementById('errorArea');
     var msg = err && err.message ? err.message : String(err);
-    el.textContent = '更新に失敗しました: ' + msg;
+    area.className = 'error-banner';
+    area.textContent = '更新に失敗しました: ' + msg;
   }
 
   function getSchedulesInSameTimeGroup(scheduleOrId) {
@@ -592,6 +570,14 @@
     return total >= HIGH_ATTENDANCE_THRESHOLD;
   }
 
+  function locationPinSvgHtml() {
+    return (
+      '<svg class="chip-loc-pin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+      '<path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>' +
+      '</svg>'
+    );
+  }
+
   function formatCalendarLocationHtml(schedules) {
     var seen = {};
     var locs = [];
@@ -606,13 +592,25 @@
       return a.localeCompare(b, 'ja');
     });
     if (!locs.length) {
-      return escapeHtml('（場所未設定）');
+      return (
+        '<span class="chip-loc-line">' +
+        locationPinSvgHtml() +
+        '<span class="chip-loc-text">' +
+        escapeHtml('（場所未設定）') +
+        '</span></span>'
+      );
     }
     return locs
       .map(function (loc) {
-        return '@' + escapeHtml(loc);
+        return (
+          '<span class="chip-loc-line">' +
+          locationPinSvgHtml() +
+          '<span class="chip-loc-text">' +
+          escapeHtml(loc) +
+          '</span></span>'
+        );
       })
-      .join('<br>');
+      .join('');
   }
 
   function createTimeGroupChip(schedules) {
