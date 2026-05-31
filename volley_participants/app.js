@@ -442,6 +442,50 @@
     area.appendChild(frag);
   }
 
+  /** 月を日曜始まりの週行に分割（null はグリッド用パディング） */
+  function getMonthWeekRows(year, month) {
+    var first = new Date(year, month - 1, 1);
+    var startPad = first.getDay();
+    var daysInMonth = new Date(year, month, 0).getDate();
+    var cells = [];
+    var pad;
+    var d;
+    for (pad = 0; pad < startPad; pad++) {
+      cells.push(null);
+    }
+    for (d = 1; d <= daysInMonth; d++) {
+      cells.push(d);
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push(null);
+    }
+    var weeks = [];
+    for (var w = 0; w < cells.length; w += 7) {
+      weeks.push(cells.slice(w, w + 7));
+    }
+    return weeks;
+  }
+
+  /** その週の当月日がすべて今日より前なら終了週 */
+  function isFinishedWeek(year, month, weekDays) {
+    var latestMs = null;
+    var i;
+    for (i = 0; i < weekDays.length; i++) {
+      var day = weekDays[i];
+      if (day == null) {
+        continue;
+      }
+      var ms = new Date(year, month - 1, day).setHours(0, 0, 0, 0);
+      if (latestMs == null || ms > latestMs) {
+        latestMs = ms;
+      }
+    }
+    if (latestMs == null) {
+      return true;
+    }
+    return latestMs < TODAY_MS;
+  }
+
   function buildMonthCalendar(year, month) {
     var card = document.createElement('section');
     card.className = 'month-card';
@@ -465,16 +509,25 @@
     var daysGrid = document.createElement('div');
     daysGrid.className = 'days';
 
-    var first = new Date(year, month - 1, 1);
-    var startPad = first.getDay();
-    var daysInMonth = new Date(year, month, 0).getDate();
-
-    for (var d = 1; d <= daysInMonth; d++) {
-      var cell = createDayCell(year, month, d, false, year, month);
-      if (d === 1 && startPad > 0) {
-        cell.style.gridColumnStart = String(startPad + 1);
+    var weekRows = getMonthWeekRows(year, month);
+    var w;
+    var col;
+    for (w = 0; w < weekRows.length; w++) {
+      var week = weekRows[w];
+      if (isFinishedWeek(year, month, week)) {
+        continue;
       }
-      daysGrid.appendChild(cell);
+      for (col = 0; col < week.length; col++) {
+        var dayNum = week[col];
+        if (dayNum == null) {
+          var empty = document.createElement('div');
+          empty.className = 'day-cell day-cell--pad';
+          empty.setAttribute('aria-hidden', 'true');
+          daysGrid.appendChild(empty);
+          continue;
+        }
+        daysGrid.appendChild(createDayCell(year, month, dayNum, false, year, month));
+      }
     }
 
     card.appendChild(daysGrid);
