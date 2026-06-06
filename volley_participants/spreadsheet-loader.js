@@ -203,18 +203,23 @@
   }
 
   function normalizeDateLabelForKey(dateLabel) {
-    return String(dateLabel || '')
+    var text = String(dateLabel || '')
       .trim()
       .replace(/\s*[（(][^）)]*[）)]\s*$/, '')
       .trim();
+    var m = text.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (m) {
+      return parseInt(m[1], 10) + '/' + parseInt(m[2], 10);
+    }
+    return text;
   }
 
   function normalizeTimeSlotForKey(timeSlot) {
     return String(timeSlot || '')
       .trim()
-      .replace(/～/g, '-')
-      .replace(/—/g, '-')
-      .replace(/－/g, '-');
+      .replace(/[～—－〜]/g, '-')
+      .replace(/\s+/g, '')
+      .replace(/-+/g, '-');
   }
 
   function scheduleTimeGroupKey(dateLabel, timeSlot) {
@@ -228,6 +233,25 @@
   function scheduleDateIsoTimeKey(dateIso, timeSlot) {
     return String(dateIso || '').trim() + '\x1f' + normalizeTimeSlotForKey(timeSlot);
   }
+
+  function registerConfirmedScheduleIndex(existingKeys, existingDateIsoTimes, schedule) {
+    if (!schedule || schedule.isTentative) {
+      return;
+    }
+    existingKeys[scheduleTimeGroupKey(schedule.dateLabel, schedule.timeSlot)] = true;
+    if (!schedule.dateIso) {
+      return;
+    }
+    existingDateIsoTimes[scheduleDateIsoTimeKey(schedule.dateIso, schedule.timeSlot)] = true;
+    var isoParts = String(schedule.dateIso).split('-');
+    if (isoParts.length === 3) {
+      var canonicalLabel =
+        parseInt(isoParts[1], 10) + '/' + parseInt(isoParts[2], 10);
+      existingKeys[scheduleTimeGroupKey(canonicalLabel, schedule.timeSlot)] = true;
+    }
+  }
+
+  var WEEKDAYS_JP = ['日', '月', '火', '水', '木', '金', '土'];
 
   function formatScheduleId(num) {
     var s = String(num);
@@ -291,6 +315,17 @@
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 
+  function isTodayDate(d) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) {
+      return false;
+    }
+    return stripTime(d).getTime() === stripTime(new Date()).getTime();
+  }
+
+  function isTodayDateIso(dateIso) {
+    return String(dateIso || '') === formatDateIso(stripTime(new Date()));
+  }
+
   function getTwoMonthRange() {
     var now = new Date();
     var start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -347,7 +382,15 @@
   }
 
   function formatScheduleDateLabel(date) {
-    return date.getMonth() + 1 + '/' + date.getDate();
+    return (
+      date.getMonth() +
+      1 +
+      '/' +
+      date.getDate() +
+      '(' +
+      WEEKDAYS_JP[date.getDay()] +
+      ')'
+    );
   }
 
   function iterateFutureDaysInRange(rangeStart, rangeEnd) {
@@ -388,6 +431,9 @@
   ) {
     var gKey = scheduleTimeGroupKey(dateLabel, timeSlot);
     if (existingKeys[gKey]) {
+      return;
+    }
+    if (isTodayDate(eventDate)) {
       return;
     }
     var counts = countParticipantsGroup(participants);
@@ -432,17 +478,14 @@
     for (i = 0; i < merged.length; i++) {
       var existing = merged[i];
       existingKeys[scheduleTimeGroupKey(existing.dateLabel, existing.timeSlot)] = true;
-      if (existing.dateIso && !existing.isTentative) {
-        existingDateIsoTimes[scheduleDateIsoTimeKey(existing.dateIso, existing.timeSlot)] = true;
-      }
+      registerConfirmedScheduleIndex(existingKeys, existingDateIsoTimes, existing);
     }
 
     var days = iterateFutureDaysInRange(rangeStart, rangeEnd);
     days.forEach(function (d) {
       var dateLabel = formatScheduleDateLabel(d);
       var dateIso = formatDateIso(d);
-      var nTime = normalizeTimeSlotForKey(DEFAULT_PARTICIPATION_TIME_SLOT);
-      if (existingDateIsoTimes[dateIso + '\x1f' + nTime]) {
+      if (existingDateIsoTimes[scheduleDateIsoTimeKey(dateIso, DEFAULT_PARTICIPATION_TIME_SLOT)]) {
         return;
       }
       var gKey = scheduleTimeGroupKey(dateLabel, DEFAULT_PARTICIPATION_TIME_SLOT);
@@ -483,6 +526,9 @@
     merged = merged.filter(function (s) {
       if (!s.isTentative || !s.dateIso) {
         return true;
+      }
+      if (isTodayDateIso(s.dateIso)) {
+        return false;
       }
       return !existingDateIsoTimes[scheduleDateIsoTimeKey(s.dateIso, s.timeSlot)];
     });
@@ -783,7 +829,7 @@
       out.push({
         scheduleId: base.scheduleId,
         dateIso: formatDateIso(eventDate),
-        dateLabel: dateLabel,
+        dateLabel: formatScheduleDateLabel(eventDate),
         year: eventYear,
         month: eventMonth,
         day: eventDate.getDate(),

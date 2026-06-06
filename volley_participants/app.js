@@ -106,18 +106,23 @@
   }
 
   function normalizeDateLabelForKey(dateLabel) {
-    return String(dateLabel || '')
+    var text = String(dateLabel || '')
       .trim()
       .replace(/\s*[（(][^）)]*[）)]\s*$/, '')
       .trim();
+    var m = text.match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (m) {
+      return parseInt(m[1], 10) + '/' + parseInt(m[2], 10);
+    }
+    return text;
   }
 
   function normalizeTimeSlotForKey(timeSlot) {
     return String(timeSlot || '')
       .trim()
-      .replace(/～/g, '-')
-      .replace(/—/g, '-')
-      .replace(/－/g, '-');
+      .replace(/[～—－〜]/g, '-')
+      .replace(/\s+/g, '')
+      .replace(/-+/g, '-');
   }
 
   function exportTimeGroupKey(schedule) {
@@ -637,7 +642,7 @@
     }
     var seen = {};
     var locs = [];
-    (schedules || []).forEach(function (s) {
+    list.forEach(function (s) {
       var loc = String(s.location || '').trim();
       if (loc && !seen[loc]) {
         seen[loc] = true;
