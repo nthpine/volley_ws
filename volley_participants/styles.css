@@ -311,6 +311,51 @@
       box-shadow: none;
     }
 
+    /* 体育館未定（白背景・破線枠） */
+    .event-chip.event-chip--tentative {
+      background: #fff;
+      color: #374151;
+      border: 1px dashed #6b7280;
+      box-shadow: none;
+    }
+
+    .event-chip.event-chip--tentative:hover {
+      background: #f9fafb;
+    }
+
+    .event-chip.event-chip--tentative .chip-loc-pin {
+      color: #6b7280;
+      opacity: 0.85;
+    }
+
+    .event-chip.event-chip--tentative .chip-loc-text {
+      color: #4b5563;
+      font-weight: 700;
+    }
+
+    .event-chip.event-chip--tentative .chip-time,
+    .event-chip.event-chip--tentative .chip-counts,
+    .event-chip.event-chip--tentative .count-active,
+    .event-chip.event-chip--tentative .count-absent {
+      color: #6b7280;
+    }
+
+    .day-cell.past .event-chip.event-chip--tentative {
+      background: #fff;
+      color: #9ca3af;
+      border-color: #d1d5db;
+    }
+
+    .event-chip.event-chip--tentative.high-attendance {
+      background: #fff;
+      color: #374151;
+      box-shadow: none;
+    }
+
+    .event-chip.event-chip--tentative.high-attendance .count-active {
+      color: #374151;
+    }
+
     .event-chip .filter-status {
       display: block;
       margin-top: 3px;

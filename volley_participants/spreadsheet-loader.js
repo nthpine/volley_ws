@@ -7,6 +7,7 @@
 
   var STATUS = { CONFIRMED: 1, PENDING: 2, ABSENT: 3 };
   var HIGH_ATTENDANCE_THRESHOLD = 8;
+  var DEFAULT_PARTICIPATION_TIME_SLOT = '19:15-21:45';
   var PARTICIPANT_REMARK_COL = 5;
   var PARTICIPANT_INPUT_AT_COL = 6;
   var BUNDLE_IDB_NAME = 'volley-viewer-gviz';
@@ -201,8 +202,31 @@
     }
   }
 
+  function normalizeDateLabelForKey(dateLabel) {
+    return String(dateLabel || '')
+      .trim()
+      .replace(/\s*[（(][^）)]*[）)]\s*$/, '')
+      .trim();
+  }
+
+  function normalizeTimeSlotForKey(timeSlot) {
+    return String(timeSlot || '')
+      .trim()
+      .replace(/～/g, '-')
+      .replace(/—/g, '-')
+      .replace(/－/g, '-');
+  }
+
   function scheduleTimeGroupKey(dateLabel, timeSlot) {
-    return String(dateLabel || '').trim() + '\x1f' + String(timeSlot || '').trim();
+    return (
+      normalizeDateLabelForKey(dateLabel) +
+      '\x1f' +
+      normalizeTimeSlotForKey(timeSlot)
+    );
+  }
+
+  function scheduleDateIsoTimeKey(dateIso, timeSlot) {
+    return String(dateIso || '').trim() + '\x1f' + normalizeTimeSlotForKey(timeSlot);
   }
 
   function formatScheduleId(num) {
@@ -315,6 +339,159 @@
     var m = ('0' + (d.getMonth() + 1)).slice(-2);
     var day = ('0' + d.getDate()).slice(-2);
     return y + '-' + m + '-' + day;
+  }
+
+  function buildTentativeScheduleId(dateIso, timeSlot) {
+    var t = String(timeSlot || '').replace(/[^0-9]/g, '');
+    return 'T-' + dateIso + '-' + (t || 'default');
+  }
+
+  function formatScheduleDateLabel(date) {
+    return date.getMonth() + 1 + '/' + date.getDate();
+  }
+
+  function iterateFutureDaysInRange(rangeStart, rangeEnd) {
+    var days = [];
+    var start = stripTime(rangeStart);
+    var today = stripTime(new Date());
+    if (start.getTime() < today.getTime()) {
+      start = today;
+    }
+    var end = stripTime(rangeEnd);
+    var d = new Date(start.getTime());
+    while (d.getTime() <= end.getTime()) {
+      days.push(new Date(d.getTime()));
+      d.setDate(d.getDate() + 1);
+    }
+    return days;
+  }
+
+  function countParticipantsGroup(participants) {
+    var confirmed = 0;
+    var pending = 0;
+    var absent = 0;
+    (participants || []).forEach(function (p) {
+      if (p.status === STATUS.CONFIRMED) confirmed++;
+      else if (p.status === STATUS.PENDING) pending++;
+      else if (p.status === STATUS.ABSENT) absent++;
+    });
+    return { confirmed: confirmed, pending: pending, absent: absent };
+  }
+
+  function appendTentativeScheduleEntry(
+    merged,
+    existingKeys,
+    eventDate,
+    dateLabel,
+    timeSlot,
+    participants
+  ) {
+    var gKey = scheduleTimeGroupKey(dateLabel, timeSlot);
+    if (existingKeys[gKey]) {
+      return;
+    }
+    var counts = countParticipantsGroup(participants);
+    var confirmed = counts.confirmed;
+    var pending = counts.pending;
+    var absent = counts.absent;
+    var dateIso = formatDateIso(eventDate);
+    merged.push({
+      scheduleId: buildTentativeScheduleId(dateIso, timeSlot),
+      dateIso: dateIso,
+      dateLabel: dateLabel,
+      year: eventDate.getFullYear(),
+      month: eventDate.getMonth() + 1,
+      day: eventDate.getDate(),
+      location: '',
+      court: '',
+      timeSlot: timeSlot,
+      orgId: '',
+      orgName: '',
+      scheduleRemark: '',
+      confirmed: confirmed,
+      pending: pending,
+      absent: absent,
+      totalCount: confirmed + pending,
+      highAttendance: confirmed + pending >= HIGH_ATTENDANCE_THRESHOLD,
+      countLabel: formatCountLabel(confirmed, pending, absent),
+      isTentative: true,
+    });
+    existingKeys[gKey] = true;
+  }
+
+  function mergeTentativeSchedulesIntoList(
+    schedules,
+    participantsByGroup,
+    rangeStart,
+    rangeEnd
+  ) {
+    var existingKeys = {};
+    var existingDateIsoTimes = {};
+    var merged = (schedules || []).slice();
+    var i;
+    for (i = 0; i < merged.length; i++) {
+      var existing = merged[i];
+      existingKeys[scheduleTimeGroupKey(existing.dateLabel, existing.timeSlot)] = true;
+      if (existing.dateIso && !existing.isTentative) {
+        existingDateIsoTimes[scheduleDateIsoTimeKey(existing.dateIso, existing.timeSlot)] = true;
+      }
+    }
+
+    var days = iterateFutureDaysInRange(rangeStart, rangeEnd);
+    days.forEach(function (d) {
+      var dateLabel = formatScheduleDateLabel(d);
+      var dateIso = formatDateIso(d);
+      var nTime = normalizeTimeSlotForKey(DEFAULT_PARTICIPATION_TIME_SLOT);
+      if (existingDateIsoTimes[dateIso + '\x1f' + nTime]) {
+        return;
+      }
+      var gKey = scheduleTimeGroupKey(dateLabel, DEFAULT_PARTICIPATION_TIME_SLOT);
+      appendTentativeScheduleEntry(
+        merged,
+        existingKeys,
+        d,
+        dateLabel,
+        DEFAULT_PARTICIPATION_TIME_SLOT,
+        (participantsByGroup && participantsByGroup[gKey]) || []
+      );
+    });
+
+    Object.keys(participantsByGroup || {}).forEach(function (gKey) {
+      if (existingKeys[gKey]) {
+        return;
+      }
+      var parts = gKey.split('\x1f');
+      var dateLabel = String(parts[0] || '').trim();
+      var timeSlot = String(parts[1] || '').trim();
+      if (!dateLabel || !timeSlot) {
+        return;
+      }
+      var eventDate = parseScheduleDateInRange(dateLabel, rangeStart, rangeEnd);
+      if (!eventDate) {
+        return;
+      }
+      appendTentativeScheduleEntry(
+        merged,
+        existingKeys,
+        eventDate,
+        dateLabel,
+        timeSlot,
+        participantsByGroup[gKey] || []
+      );
+    });
+
+    merged = merged.filter(function (s) {
+      if (!s.isTentative || !s.dateIso) {
+        return true;
+      }
+      return !existingDateIsoTimes[scheduleDateIsoTimeKey(s.dateIso, s.timeSlot)];
+    });
+
+    merged.sort(function (a, b) {
+      if (a.dateIso !== b.dateIso) return a.dateIso < b.dateIso ? -1 : 1;
+      return a.timeSlot.localeCompare(b.timeSlot, 'ja');
+    });
+    return merged;
   }
 
   function findOrgIdColumnIndex(headers) {
@@ -653,6 +830,17 @@
       schedHeaders,
       range.displayMonths
     );
+    var participantsByGroup = buildParticipantsByTimeGroupFromRows(
+      partRows,
+      partHeaders,
+      sidToGroup
+    );
+    schedules = mergeTentativeSchedulesIntoList(
+      schedules,
+      participantsByGroup,
+      range.start,
+      range.end
+    );
     return {
       generatedAt: new Date().toISOString(),
       range: {
@@ -663,11 +851,7 @@
       },
       schedules: schedules,
       members: loadMemberNames(sheetData.members),
-      participantsByGroup: buildParticipantsByTimeGroupFromRows(
-        partRows,
-        partHeaders,
-        sidToGroup
-      ),
+      participantsByGroup: participantsByGroup,
       orgById: buildOrgByIdForExport(configMap),
     };
   }
@@ -709,4 +893,6 @@
   }
 
   global.loadVolleyCalendarBundle = loadVolleyCalendarBundle;
+  global.mergeVolleyTentativeSchedules = mergeTentativeSchedulesIntoList;
+  global.getVolleyTwoMonthRange = getTwoMonthRange;
 })(typeof window !== 'undefined' ? window : this);

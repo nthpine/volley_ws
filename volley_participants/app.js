@@ -105,16 +105,39 @@
     return year + '\x1f' + month + '\x1f' + day;
   }
 
+  function normalizeDateLabelForKey(dateLabel) {
+    return String(dateLabel || '')
+      .trim()
+      .replace(/\s*[（(][^）)]*[）)]\s*$/, '')
+      .trim();
+  }
+
+  function normalizeTimeSlotForKey(timeSlot) {
+    return String(timeSlot || '')
+      .trim()
+      .replace(/～/g, '-')
+      .replace(/—/g, '-')
+      .replace(/－/g, '-');
+  }
+
   function exportTimeGroupKey(schedule) {
     return (
-      String(schedule.dateLabel || '').trim() +
+      normalizeDateLabelForKey(schedule.dateLabel) +
       '\x1f' +
-      String(schedule.timeSlot || '').trim()
+      normalizeTimeSlotForKey(schedule.timeSlot)
     );
   }
 
   function calendarDisplayGroupKey(s) {
-    return s.year + '-' + s.month + '-' + s.day + '\x1f' + String(s.timeSlot || '').trim();
+    return (
+      s.year +
+      '-' +
+      s.month +
+      '-' +
+      s.day +
+      '\x1f' +
+      normalizeTimeSlotForKey(s.timeSlot)
+    );
   }
 
   function rebuildScheduleDayIndex() {
@@ -293,6 +316,22 @@
     var list = (schedules || []).slice();
     if (!list.length) {
       return '';
+    }
+    var confirmed = list.filter(function (s) {
+      return !s.isTentative;
+    });
+    if (confirmed.length) {
+      list = confirmed;
+    } else if (list.every(function (s) {
+      return s.isTentative;
+    })) {
+      return (
+        '<div class="schedule-group-grid schedule-group-grid--meta" style="--sg-cols:1">' +
+        '<div class="schedule-group-row">' +
+        '<span class="sg-label">' + escapeHtml('場所：') + '</span>' +
+        '<span class="sg-cell">' + escapeHtml('未定（体育館未確定）') + '</span>' +
+        '</div></div>'
+      );
     }
     var cols = list.length;
     var rowDefs = [
@@ -579,6 +618,23 @@
   }
 
   function formatCalendarLocationHtml(schedules) {
+    var list = (schedules || []).slice();
+    var confirmed = list.filter(function (s) {
+      return !s.isTentative;
+    });
+    if (confirmed.length) {
+      list = confirmed;
+    } else if (list.some(function (s) {
+      return s.isTentative;
+    })) {
+      return (
+        '<span class="chip-loc-line">' +
+        locationPinSvgHtml() +
+        '<span class="chip-loc-text">' +
+        escapeHtml('未定') +
+        '</span></span>'
+      );
+    }
     var seen = {};
     var locs = [];
     (schedules || []).forEach(function (s) {
@@ -615,6 +671,9 @@
 
   function createTimeGroupChip(schedules) {
     var sorted = (schedules || []).slice().sort(function (a, b) {
+      if (!!a.isTentative !== !!b.isTentative) {
+        return a.isTentative ? 1 : -1;
+      }
       var la = String(a.location || '');
       var lb = String(b.location || '');
       if (la !== lb) {
@@ -622,12 +681,20 @@
       }
       return String(a.scheduleId || '').localeCompare(String(b.scheduleId || ''), 'ja');
     });
-    var primary = sorted[0];
-    var agg = aggregateGroupCounts(sorted);
+    var displaySchedules = sorted.filter(function (s) {
+      return !s.isTentative;
+    });
+    if (!displaySchedules.length) {
+      displaySchedules = sorted;
+    }
+    var primary = displaySchedules[0];
+    var agg = aggregateGroupCounts(displaySchedules);
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'event-chip';
-    if (agg.total >= HIGH_ATTENDANCE_THRESHOLD) {
+    if (primary && primary.isTentative) {
+      btn.classList.add('event-chip--tentative');
+    } else if (agg.total >= HIGH_ATTENDANCE_THRESHOLD) {
       btn.classList.add('high-attendance');
     }
     var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
