@@ -311,49 +311,50 @@
       box-shadow: none;
     }
 
-    /* 体育館未定（白背景・破線枠） */
+    /* 体育館未定（白背景・薄い破線枠） */
     .event-chip.event-chip--tentative {
       background: #fff;
-      color: #374151;
-      border: 1px dashed #6b7280;
+      color: #9ca3af;
+      border: 1px dashed #e5e7eb;
       box-shadow: none;
     }
 
     .event-chip.event-chip--tentative:hover {
-      background: #f9fafb;
+      background: #fafafa;
+      border-color: #d1d5db;
     }
 
     .event-chip.event-chip--tentative .chip-loc-pin {
-      color: #6b7280;
-      opacity: 0.85;
+      color: #cbd5e1;
+      opacity: 1;
     }
 
     .event-chip.event-chip--tentative .chip-loc-text {
-      color: #4b5563;
-      font-weight: 700;
+      color: #9ca3af;
+      font-weight: 600;
     }
 
     .event-chip.event-chip--tentative .chip-time,
     .event-chip.event-chip--tentative .chip-counts,
     .event-chip.event-chip--tentative .count-active,
     .event-chip.event-chip--tentative .count-absent {
-      color: #6b7280;
+      color: #b0b8c4;
     }
 
     .day-cell.past .event-chip.event-chip--tentative {
       background: #fff;
-      color: #9ca3af;
-      border-color: #d1d5db;
+      color: #d1d5db;
+      border-color: #f3f4f6;
     }
 
     .event-chip.event-chip--tentative.high-attendance {
       background: #fff;
-      color: #374151;
+      color: #9ca3af;
       box-shadow: none;
     }
 
     .event-chip.event-chip--tentative.high-attendance .count-active {
-      color: #374151;
+      color: #b0b8c4;
     }
 
     .event-chip .filter-status {
