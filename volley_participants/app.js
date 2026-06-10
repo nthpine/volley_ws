@@ -10,6 +10,9 @@
     orgById: {},
     currentScheduleId: null,
     detailSiblings: [],
+    currentGroupKey: '',
+    selectedParticipantName: null,
+    lastParticipants: [],
     generatedAt: null,
   };
 
@@ -32,6 +35,8 @@
     if (bulkLink && CONFIG.BULK_REGISTER_URL) {
       bulkLink.href = CONFIG.BULK_REGISTER_URL;
     }
+    document.getElementById('participantList').addEventListener('click', onParticipantListClick);
+    document.getElementById('saveParticipantBtn').addEventListener('click', onSaveParticipantClick);
   }
 
   function bootApp() {
@@ -716,8 +721,11 @@
   function openDetail(scheduleId) {
     STATE.currentScheduleId = scheduleId;
     STATE.detailSiblings = getSchedulesInSameTimeGroup(scheduleId);
+    STATE.selectedParticipantName = null;
+    STATE.lastParticipants = [];
     hideOrgDetailPanel();
-    document.getElementById('modalFormMessage').textContent = '';
+    hideParticipantEditSection();
+    setModalFormMessage('', '');
 
     var local = STATE.schedules.find(function (s) {
       return s.scheduleId === scheduleId;
@@ -725,6 +733,8 @@
     if (!local) {
       return;
     }
+
+    STATE.currentGroupKey = exportTimeGroupKey(local);
 
     document.getElementById('modalOverlay').classList.add('open');
     document.getElementById('modalOverlay').setAttribute('aria-hidden', 'false');
@@ -792,8 +802,75 @@
     modalCountEl.style.color = active >= HIGH_ATTENDANCE_THRESHOLD ? '#047857' : '';
 
     var key = exportTimeGroupKey(schedule);
+    STATE.currentGroupKey = key;
     var participants = (STATE.participantsByGroup && STATE.participantsByGroup[key]) || [];
-    renderParticipantList(participants);
+    STATE.lastParticipants = participants.slice();
+    renderParticipantList(STATE.lastParticipants);
+    if (STATE.selectedParticipantName) {
+      var selected = STATE.lastParticipants.find(function (p) {
+        return p.name === STATE.selectedParticipantName;
+      });
+      if (selected) {
+        showParticipantEditSection(selected);
+      } else {
+        STATE.selectedParticipantName = null;
+        hideParticipantEditSection();
+      }
+    }
+  }
+
+  function statusLabelFromCode(status) {
+    if (status === 1) return '○';
+    if (status === 2) return '△';
+    if (status === 3) return '✕';
+    return String(status || '');
+  }
+
+  function setModalFormMessage(text, kind) {
+    var el = document.getElementById('modalFormMessage');
+    el.textContent = text || '';
+    el.className = 'form-message' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
+  }
+
+  function hideParticipantEditSection() {
+    document.getElementById('participantEditSection').style.display = 'none';
+    document.getElementById('editTargetName').textContent = '';
+    document.getElementById('editRemark').value = '';
+  }
+
+  function showParticipantEditSection(participant) {
+    var section = document.getElementById('participantEditSection');
+    section.style.display = 'block';
+    document.getElementById('editTargetName').textContent = participant.name;
+    document.getElementById('editRemark').value = participant.remark || '';
+    var statusInput = document.querySelector(
+      'input[name="editStatus"][value="' + String(participant.status) + '"]'
+    );
+    if (statusInput) {
+      statusInput.checked = true;
+    }
+  }
+
+  function onParticipantListClick(e) {
+    var li = e.target.closest('#participantList li[data-name]');
+    if (!li) {
+      return;
+    }
+    var name = li.getAttribute('data-name');
+    var participant = STATE.lastParticipants.find(function (p) {
+      return p.name === name;
+    });
+    if (!participant) {
+      return;
+    }
+    STATE.selectedParticipantName = name;
+    renderParticipantList(STATE.lastParticipants);
+    showParticipantEditSection(participant);
+    setModalFormMessage('', '');
+    document.getElementById('participantEditSection').scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
   }
 
   function renderParticipantList(participants) {
@@ -802,15 +879,20 @@
 
     if (!participants.length) {
       document.getElementById('emptyParticipants').style.display = 'block';
+      hideParticipantEditSection();
       return;
     }
 
     document.getElementById('emptyParticipants').style.display = 'none';
     participants.forEach(function (p) {
       var li = document.createElement('li');
+      li.setAttribute('data-name', p.name);
       var badgeClass = 'pending';
       if (p.status === 1) badgeClass = 'confirmed';
       else if (p.status === 3) badgeClass = 'absent';
+      if (STATE.selectedParticipantName === p.name) {
+        li.classList.add('selected');
+      }
 
       var remarkHtml = p.remark
         ? '<span class="participant-remark" title="' +
@@ -827,19 +909,105 @@
         '</span>' +
         remarkHtml +
         '</div>' +
+        '<span class="edit-hint">変更</span>' +
         '<span class="badge ' +
         badgeClass +
         '">' +
-        escapeHtml(p.statusLabel || '') +
+        escapeHtml(p.statusLabel || statusLabelFromCode(p.status)) +
         '</span>';
       list.appendChild(li);
     });
+  }
+
+  function applyParticipantSaveToState(detail) {
+    if (!detail) {
+      return;
+    }
+    if (detail.participants && STATE.currentGroupKey) {
+      STATE.participantsByGroup[STATE.currentGroupKey] = detail.participants;
+      STATE.lastParticipants = detail.participants.slice();
+    }
+    if (detail.schedule) {
+      var s = detail.schedule;
+      var siblingIds = {};
+      STATE.detailSiblings.forEach(function (row) {
+        siblingIds[row.scheduleId] = true;
+      });
+      STATE.schedules = STATE.schedules.map(function (row) {
+        if (!siblingIds[row.scheduleId] && row.scheduleId !== s.scheduleId) {
+          return row;
+        }
+        return Object.assign({}, row, {
+          confirmed: s.confirmed,
+          pending: s.pending,
+          absent: s.absent,
+          totalCount: s.totalCount,
+          highAttendance: s.highAttendance,
+          countLabel: s.countLabel,
+        });
+      });
+      rebuildScheduleDayIndex();
+      renderCalendars();
+    }
+  }
+
+  function onSaveParticipantClick() {
+    if (!STATE.currentScheduleId || !STATE.selectedParticipantName) {
+      setModalFormMessage('変更する参加者を一覧から選んでください。', 'err');
+      return;
+    }
+    var statusEl = document.querySelector('input[name="editStatus"]:checked');
+    if (!statusEl) {
+      setModalFormMessage('参加状況を選んでください。', 'err');
+      return;
+    }
+    var status = parseInt(statusEl.value, 10);
+    var remark = document.getElementById('editRemark').value.trim();
+    var btn = document.getElementById('saveParticipantBtn');
+    btn.disabled = true;
+    setModalFormMessage('保存中…', '');
+
+    var saveFn =
+      typeof saveParticipationRemote === 'function' ? saveParticipationRemote : null;
+    if (!saveFn) {
+      btn.disabled = false;
+      setModalFormMessage('保存 API が読み込まれていません。', 'err');
+      return;
+    }
+
+    saveFn(STATE.currentScheduleId, STATE.selectedParticipantName, status, remark)
+      .then(function (data) {
+        btn.disabled = false;
+        applyParticipantSaveToState(data);
+        var local = STATE.schedules.find(function (s) {
+          return s.scheduleId === STATE.currentScheduleId;
+        });
+        if (local) {
+          renderDetailFromSnapshot(local);
+        }
+        var result = data.result || {};
+        setModalFormMessage(
+          (result.name || STATE.selectedParticipantName) +
+            ' さんを「' +
+            (result.statusLabel || statusLabelFromCode(status)) +
+            '」に変更しました。',
+          'ok'
+        );
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        setModalFormMessage(err.message || String(err), 'err');
+      });
   }
 
   function closeModal() {
     document.getElementById('modalOverlay').classList.remove('open');
     document.getElementById('modalOverlay').setAttribute('aria-hidden', 'true');
     STATE.currentScheduleId = null;
+    STATE.selectedParticipantName = null;
+    STATE.lastParticipants = [];
+    STATE.currentGroupKey = '';
+    hideParticipantEditSection();
     hideOrgDetailPanel();
   }
 

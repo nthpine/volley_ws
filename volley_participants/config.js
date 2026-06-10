@@ -13,7 +13,9 @@ var CONFIG = {
   },
   /** IndexedDB キャッシュ有効期限（ミリ秒） */
   CACHE_TTL_MS: 10 * 60 * 1000,
-  /** 一括登録 UI（GAS Web アプリ exec URL） */
+  /** 一括登録 UI・参加状況 API（GAS Web アプリ exec URL） */
   BULK_REGISTER_URL:
     'https://script.google.com/macros/s/AKfycbx9rT2wowTFLXWxLLM_X30s_b1uWE2ukl9S6e-8XFzSdBYhXykzfTluKp5fgERrq99a/exec',
+  /** 任意: GAS Script Properties の PARTICIPATION_API_SECRET と同じ値 */
+  PARTICIPATION_API_TOKEN: '',
 };

@@ -7,6 +7,7 @@
 |------|-----|
 | 閲覧 | https://nthpine.github.io/volley_ws/volley_participants/ |
 | 一括登録・変更 | `config.js` の `BULK_REGISTER_URL`（GAS Web アプリ） |
+| 詳細画面からのステータス変更 | 同上 GAS（`doPost` / `action: saveParticipation`） |
 
 **誰かがシート（または GAS 一括登録）で参加状況を更新すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。** GitHub Actions や `calendar.json` の手動同期は不要です。
 
@@ -62,9 +63,15 @@ git push
 
 ---
 
-## GAS（一括登録）
+## GAS（一括登録・ステータス変更 API）
 
-[`volley_gas`](../volley_gas/) の `BulkIndex.html` が一括登録 UI です。`clasp push` のあと Web アプリを **新バージョン**で再デプロイしてください。
+[`volley_gas`](../volley_gas/) の `BulkIndex.html` が一括登録 UI です。
+
+詳細画面からのステータス変更は、同じ Web アプリ URL へ POST します（`participant-api.js`）。
+
+1. `volley_gas` を `clasp push`
+2. Web アプリを **新バージョン**で再デプロイ（「自分として実行」「全員」）
+3. 任意: Script Properties に `PARTICIPATION_API_SECRET` を設定し、`config.js` の `PARTICIPATION_API_TOKEN` に同じ値を入れる
 
 `?action=export`（JSON エクスポート）は閲覧サイトでは **使いません**（予約同期 API 等で残している場合あり）。
 
@@ -77,6 +84,7 @@ volley_participants/
   index.html
   config.js              SPREADSHEET_ID, シート名, BULK_REGISTER_URL
   spreadsheet-loader.js    gviz 取得 + カレンダー組み立て
+  participant-api.js       参加状況の保存 API 呼び出し
   app.js                   UI（カレンダー・モーダル）
   styles.css
 ```
@@ -90,3 +98,14 @@ npx --yes serve volley_participants
 ```
 
 ※ スプレッドシートが閲覧可である必要があります。
+
+### モック画面（push 前の確認用）
+
+スプレッドシートなしで UI を確認する場合:
+
+```text
+http://localhost:3000/mock.html
+```
+
+- `mock.html` / `mock-data.js` は **本番 push 前に削除** してください
+- 終了した週の行はカレンダーに表示されません（モックの「過去週」イベントも非表示）

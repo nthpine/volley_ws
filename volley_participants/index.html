@@ -48,16 +48,38 @@
         <p id="modalCount" style="font-weight:600;margin-top:0;"></p>
         <h3 style="font-size:0.95rem;margin:0 0 0.25rem;">参加者一覧</h3>
         <p class="form-hint" style="margin-top:0;margin-bottom:0.5rem;color:var(--muted);font-size:0.85rem;">
-          登録・変更は「一括登録」から行えます
+          名前をタップしてステータスを変更できます（新規登録は「一括登録」）
         </p>
-        <ul id="participantList" class="participant-list readonly"></ul>
+        <ul id="participantList" class="participant-list"></ul>
         <p id="emptyParticipants" class="empty-participants" style="display:none;">まだ登録がありません</p>
+        <section id="participantEditSection" class="form-section" style="display:none;">
+          <h3>ステータス変更</h3>
+          <p id="editTargetName" class="edit-target-name"></p>
+          <div class="status-group" role="radiogroup" aria-label="参加状況">
+            <label class="status-option confirmed">
+              <input type="radio" name="editStatus" value="1" />
+              <span>○</span>
+            </label>
+            <label class="status-option pending">
+              <input type="radio" name="editStatus" value="2" />
+              <span>△</span>
+            </label>
+            <label class="status-option absent">
+              <input type="radio" name="editStatus" value="3" />
+              <span>✕</span>
+            </label>
+          </div>
+          <label for="editRemark">備考（任意）</label>
+          <input type="text" id="editRemark" autocomplete="off" />
+          <button type="button" id="saveParticipantBtn" class="submit-btn">変更を保存</button>
+        </section>
         <p id="modalFormMessage" class="form-message"></p>
       </div>
     </div>
   </div>
 
   <script src="config.js"></script>
+  <script src="participant-api.js"></script>
   <script src="spreadsheet-loader.js"></script>
   <script src="app.js"></script>
 </body>
