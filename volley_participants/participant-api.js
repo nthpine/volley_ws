@@ -58,6 +58,14 @@
           }
           return data;
         });
+      })
+      .catch(function (err) {
+        if (err && err.message) {
+          throw err;
+        }
+        throw new Error(
+          'サーバーへの接続に失敗しました。GAS Web アプリの再デプロイ後、ページを再読み込みしてください。'
+        );
       });
   }
 

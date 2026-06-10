@@ -73,6 +73,8 @@ git push
 2. Web アプリを **新バージョン**で再デプロイ（「自分として実行」「全員」）
 3. 任意: Script Properties に `PARTICIPATION_API_SECRET` を設定し、`config.js` の `PARTICIPATION_API_TOKEN` に同じ値を入れる
 
+**重要**: `clasp push` だけでは本番 URL は更新されません。必ず `clasp deploy -i <デプロイID>` で既存 Web アプリを再デプロイしてください。
+
 `?action=export`（JSON エクスポート）は閲覧サイトでは **使いません**（予約同期 API 等で残している場合あり）。
 
 ---
