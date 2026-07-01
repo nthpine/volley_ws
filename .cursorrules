@@ -1,3 +1,5 @@
 コミットメッセージを日本語で生成してください
 
-GASの場合、Agentモードで修正後、clasp push -f を実施してください
+GASの場合、Agentモードで修正後、clasp push -f と clasp deploy を実施してください。
+vercelの場合、Agentモードで修正後、pushやdeployまで自動で実施してください。
+volley_participants（GitHub Pages）の場合、Agentモードで修正後、コミットして main へ push まで実施してください。

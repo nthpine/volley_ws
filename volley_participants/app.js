@@ -800,7 +800,7 @@
     var modalCountEl = document.getElementById('modalCount');
     modalCountEl.textContent = countText;
     modalCountEl.style.whiteSpace = 'pre-line';
-    modalCountEl.style.color = active >= HIGH_ATTENDANCE_THRESHOLD ? '#047857' : '';
+    modalCountEl.classList.toggle('modal-count--hot', active >= HIGH_ATTENDANCE_THRESHOLD);
 
     var key = exportTimeGroupKey(schedule);
     STATE.currentGroupKey = key;
