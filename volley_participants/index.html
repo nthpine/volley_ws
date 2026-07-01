@@ -48,13 +48,17 @@
         <p id="modalCount" style="font-weight:600;margin-top:0;"></p>
         <h3 style="font-size:0.95rem;margin:0 0 0.25rem;">参加者一覧</h3>
         <p class="form-hint" style="margin-top:0;margin-bottom:0.5rem;color:var(--muted);font-size:0.85rem;">
-          名前をタップしてステータスを変更できます（新規登録は「一括登録」）
+          下のフォームから参加状況を登録・変更できます
         </p>
         <ul id="participantList" class="participant-list"></ul>
         <p id="emptyParticipants" class="empty-participants" style="display:none;">まだ登録がありません</p>
-        <section id="participantEditSection" class="form-section" style="display:none;">
-          <h3>ステータス変更</h3>
-          <p id="editTargetName" class="edit-target-name"></p>
+        <section id="participantRegisterSection" class="form-section">
+          <h3>参加登録</h3>
+          <p class="form-hint">一覧の名前をタップするとフォームに反映されます</p>
+          <label for="participantMemberSelect">名前</label>
+          <select id="participantMemberSelect">
+            <option value="">選択してください</option>
+          </select>
           <div class="status-group" role="radiogroup" aria-label="参加状況">
             <label class="status-option confirmed">
               <input type="radio" name="editStatus" value="1" />
@@ -71,16 +75,16 @@
           </div>
           <label for="editRemark">備考（任意）</label>
           <input type="text" id="editRemark" autocomplete="off" />
-          <button type="button" id="saveParticipantBtn" class="submit-btn">変更を保存</button>
+          <button type="button" id="saveParticipantBtn" class="submit-btn">登録</button>
         </section>
         <p id="modalFormMessage" class="form-message"></p>
       </div>
     </div>
   </div>
 
-  <script src="config.js?v=2"></script>
-  <script src="participant-api.js?v=2"></script>
-  <script src="spreadsheet-loader.js?v=2"></script>
-  <script src="app.js?v=2"></script>
+  <script src="config.js?v=3"></script>
+  <script src="participant-api.js?v=3"></script>
+  <script src="spreadsheet-loader.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

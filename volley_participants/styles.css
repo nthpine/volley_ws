@@ -912,6 +912,16 @@
       font-size: 0.95rem;
     }
 
+    #participantRegisterSection {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    #participantRegisterSection .form-hint {
+      margin-top: -0.35rem;
+    }
+
     label {
       display: block;
       font-size: 0.85rem;

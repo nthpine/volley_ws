@@ -37,6 +37,7 @@
     }
     document.getElementById('participantList').addEventListener('click', onParticipantListClick);
     document.getElementById('saveParticipantBtn').addEventListener('click', onSaveParticipantClick);
+    document.getElementById('participantMemberSelect').addEventListener('change', onMemberSelectChange);
   }
 
   function bootApp() {
@@ -724,7 +725,7 @@
     STATE.selectedParticipantName = null;
     STATE.lastParticipants = [];
     hideOrgDetailPanel();
-    hideParticipantEditSection();
+    resetParticipantForm();
     setModalFormMessage('', '');
 
     var local = STATE.schedules.find(function (s) {
@@ -806,15 +807,15 @@
     var participants = (STATE.participantsByGroup && STATE.participantsByGroup[key]) || [];
     STATE.lastParticipants = participants.slice();
     renderParticipantList(STATE.lastParticipants);
+    populateMemberSelect();
     if (STATE.selectedParticipantName) {
-      var selected = STATE.lastParticipants.find(function (p) {
-        return p.name === STATE.selectedParticipantName;
-      });
-      if (selected) {
-        showParticipantEditSection(selected);
+      var select = document.getElementById('participantMemberSelect');
+      if (select && STATE.members.indexOf(STATE.selectedParticipantName) >= 0) {
+        select.value = STATE.selectedParticipantName;
+        prefillParticipantFormFromSelection();
       } else {
         STATE.selectedParticipantName = null;
-        hideParticipantEditSection();
+        resetParticipantFormFields();
       }
     }
   }
@@ -832,23 +833,80 @@
     el.className = 'form-message' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
   }
 
-  function hideParticipantEditSection() {
-    document.getElementById('participantEditSection').style.display = 'none';
-    document.getElementById('editTargetName').textContent = '';
+  function populateMemberSelect() {
+    var select = document.getElementById('participantMemberSelect');
+    if (!select) {
+      return;
+    }
+    var previous = select.value;
+    select.innerHTML = '<option value="">選択してください</option>';
+    (STATE.members || []).forEach(function (name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+    if (previous && STATE.members.indexOf(previous) >= 0) {
+      select.value = previous;
+    }
+  }
+
+  function resetParticipantFormFields() {
+    var select = document.getElementById('participantMemberSelect');
+    if (select) {
+      select.value = '';
+    }
+    document.querySelectorAll('input[name="editStatus"]').forEach(function (input) {
+      input.checked = false;
+    });
     document.getElementById('editRemark').value = '';
   }
 
-  function showParticipantEditSection(participant) {
-    var section = document.getElementById('participantEditSection');
-    section.style.display = 'block';
-    document.getElementById('editTargetName').textContent = participant.name;
+  function resetParticipantForm() {
+    STATE.selectedParticipantName = null;
+    resetParticipantFormFields();
+  }
+
+  function prefillParticipantForm(participant) {
+    if (!participant) {
+      return;
+    }
     document.getElementById('editRemark').value = participant.remark || '';
     var statusInput = document.querySelector(
       'input[name="editStatus"][value="' + String(participant.status) + '"]'
     );
+    document.querySelectorAll('input[name="editStatus"]').forEach(function (input) {
+      input.checked = false;
+    });
     if (statusInput) {
       statusInput.checked = true;
     }
+  }
+
+  function prefillParticipantFormFromSelection() {
+    var name = document.getElementById('participantMemberSelect').value;
+    STATE.selectedParticipantName = name || null;
+    if (!name) {
+      resetParticipantFormFields();
+      return;
+    }
+    var participant = STATE.lastParticipants.find(function (p) {
+      return p.name === name;
+    });
+    if (participant) {
+      prefillParticipantForm(participant);
+      return;
+    }
+    document.querySelectorAll('input[name="editStatus"]').forEach(function (input) {
+      input.checked = false;
+    });
+    document.getElementById('editRemark').value = '';
+  }
+
+  function onMemberSelectChange() {
+    prefillParticipantFormFromSelection();
+    renderParticipantList(STATE.lastParticipants);
+    setModalFormMessage('', '');
   }
 
   function onParticipantListClick(e) {
@@ -864,10 +922,14 @@
       return;
     }
     STATE.selectedParticipantName = name;
+    var select = document.getElementById('participantMemberSelect');
+    if (select) {
+      select.value = name;
+    }
+    prefillParticipantForm(participant);
     renderParticipantList(STATE.lastParticipants);
-    showParticipantEditSection(participant);
     setModalFormMessage('', '');
-    document.getElementById('participantEditSection').scrollIntoView({
+    document.getElementById('participantRegisterSection').scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
     });
@@ -879,7 +941,6 @@
 
     if (!participants.length) {
       document.getElementById('emptyParticipants').style.display = 'block';
-      hideParticipantEditSection();
       return;
     }
 
@@ -952,8 +1013,13 @@
   }
 
   function onSaveParticipantClick() {
-    if (!STATE.currentScheduleId || !STATE.selectedParticipantName) {
-      setModalFormMessage('変更する参加者を一覧から選んでください。', 'err');
+    if (!STATE.currentScheduleId) {
+      setModalFormMessage('日程が選択されていません。', 'err');
+      return;
+    }
+    var memberName = document.getElementById('participantMemberSelect').value.trim();
+    if (!memberName) {
+      setModalFormMessage('名前を選択してください。', 'err');
       return;
     }
     var statusEl = document.querySelector('input[name="editStatus"]:checked');
@@ -975,22 +1041,28 @@
       return;
     }
 
-    saveFn(STATE.currentScheduleId, STATE.selectedParticipantName, status, remark)
+    saveFn(STATE.currentScheduleId, memberName, status, remark)
       .then(function (data) {
         btn.disabled = false;
         applyParticipantSaveToState(data);
+        STATE.selectedParticipantName = memberName;
         var local = STATE.schedules.find(function (s) {
           return s.scheduleId === STATE.currentScheduleId;
         });
         if (local) {
           renderDetailFromSnapshot(local);
+          var select = document.getElementById('participantMemberSelect');
+          if (select) {
+            select.value = memberName;
+          }
+          prefillParticipantFormFromSelection();
         }
         var result = data.result || {};
         setModalFormMessage(
-          (result.name || STATE.selectedParticipantName) +
+          (result.name || memberName) +
             ' さんを「' +
             (result.statusLabel || statusLabelFromCode(status)) +
-            '」に変更しました。',
+            '」で登録しました。',
           'ok'
         );
       })
@@ -1007,7 +1079,7 @@
     STATE.selectedParticipantName = null;
     STATE.lastParticipants = [];
     STATE.currentGroupKey = '';
-    hideParticipantEditSection();
+    resetParticipantForm();
     hideOrgDetailPanel();
   }
 
