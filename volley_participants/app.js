@@ -404,21 +404,21 @@
   }
 
   function formatChipCountHtml(agg) {
-    var html = [];
+    if (!(agg.absent > 0)) {
+      return '';
+    }
+    return (
+      '<span class="count-absent">' + escapeHtml('✕' + agg.absent + '人') + '</span>'
+    );
+  }
+
+  function formatChipBgCountHtml(agg) {
     var active = (agg.confirmed || 0) + (agg.pending || 0);
-    if (active > 0) {
-      var text =
-        agg.pending > 0 ? active + '人(△' + agg.pending + ')' : active + '人';
-      html.push('<span class="count-active">' + escapeHtml(text) + '</span>');
-    } else if (!(agg.absent > 0)) {
-      html.push('<span class="count-active">' + escapeHtml('0人') + '</span>');
-    }
-    if (agg.absent > 0) {
-      html.push(
-        '<span class="count-absent">' + escapeHtml('✕' + agg.absent + '人') + '</span>'
-      );
-    }
-    return html.join('');
+    return (
+      '<span class="chip-bg-count" aria-hidden="true">' +
+      escapeHtml(String(active)) +
+      '</span>'
+    );
   }
 
   function formatBulkTimeSlotHtml(timeSlot) {
@@ -676,8 +676,11 @@
       btn.classList.add('high-attendance');
     }
     var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
+    var activeCount = (agg.confirmed || 0) + (agg.pending || 0);
     btn.dataset.scheduleId = primary ? String(primary.scheduleId || '') : '';
+    btn.setAttribute('data-bg-count', String(activeCount));
     btn.innerHTML =
+      formatChipBgCountHtml(agg) +
       '<span class="chip-location">' + formatCalendarLocationHtml(sorted) + '</span>' +
       '<span class="chip-footer">' +
       '<span class="chip-time">' + formatBulkTimeSlotHtml(timeSlot) + '</span>' +
