@@ -240,6 +240,7 @@ main {
 .day-cell {
   min-width: 0;
   min-height: 80px;
+  container-type: inline-size;
   border: 1px solid var(--border);
   padding: 3px;
   vertical-align: top;
@@ -351,27 +352,30 @@ main {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: clamp(1.35rem, 5.5cqi, 2.4rem);
+  font-size: clamp(2rem, 58cqi, 2.85rem);
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.04em;
-  color: currentColor;
-  opacity: 0.38;
+  letter-spacing: -0.05em;
+  color: rgba(124, 58, 237, 0.55);
   pointer-events: none;
   user-select: none;
   z-index: 0;
 }
 
 .event-chip.high-attendance .chip-bg-count {
-  opacity: 0.44;
+  color: rgba(4, 120, 87, 0.62);
 }
 
 .event-chip[data-bg-count="0"] .chip-bg-count {
-  opacity: 0.24;
+  color: rgba(148, 163, 184, 0.42);
 }
 
 .day-cell.past .event-chip .chip-bg-count {
-  opacity: 0.22;
+  color: rgba(124, 58, 237, 0.3);
+}
+
+.day-cell.past .event-chip.high-attendance .chip-bg-count {
+  color: rgba(4, 120, 87, 0.35);
 }
 
 .event-chip .chip-location,
