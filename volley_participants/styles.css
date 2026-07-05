@@ -353,52 +353,6 @@ main {
   border-left-color: rgba(5, 150, 105, 0.35);
 }
 
-.event-chip.event-chip--tentative {
-  background: #f8fafc;
-  color: var(--muted);
-  border: 1px dashed rgba(148, 163, 184, 0.6);
-  border-left: 3px dashed rgba(148, 163, 184, 0.5);
-  box-shadow: none;
-}
-
-.event-chip.event-chip--tentative:hover {
-  background: #f1f5f9;
-  border-color: var(--muted);
-}
-
-.event-chip.event-chip--tentative .chip-loc-pin {
-  color: var(--muted);
-  opacity: 1;
-}
-
-.event-chip.event-chip--tentative .chip-loc-text {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.event-chip.event-chip--tentative .chip-time,
-.event-chip.event-chip--tentative .chip-counts,
-.event-chip.event-chip--tentative .count-active,
-.event-chip.event-chip--tentative .count-absent {
-  color: var(--muted);
-}
-
-.day-cell.past .event-chip.event-chip--tentative {
-  background: #f8fafc;
-  color: rgba(100, 116, 139, 0.7);
-  border-color: rgba(148, 163, 184, 0.35);
-}
-
-.event-chip.event-chip--tentative.high-attendance {
-  background: #f8fafc;
-  color: var(--muted);
-  box-shadow: none;
-}
-
-.event-chip.event-chip--tentative.high-attendance .count-active {
-  color: var(--muted);
-}
-
 .event-chip .filter-status {
   display: block;
   margin-top: 3px;

@@ -232,10 +232,10 @@
     rebuildScheduleDayIndex();
 
     if (data.range) {
+      var startLabel = formatYearMonth(data.range.startYear, data.range.startMonth);
+      var endLabel = formatYearMonth(data.range.endYear, data.range.endMonth);
       document.getElementById('periodLabel').textContent =
-        formatYearMonth(data.range.startYear, data.range.startMonth) +
-        ' 〜 ' +
-        formatYearMonth(data.range.endYear, data.range.endMonth);
+        startLabel === endLabel ? startLabel : startLabel + ' 〜 ' + endLabel;
     } else {
       document.getElementById('periodLabel').textContent = '参加カレンダー';
     }
@@ -327,22 +327,6 @@
     var list = (schedules || []).slice();
     if (!list.length) {
       return '';
-    }
-    var confirmed = list.filter(function (s) {
-      return !s.isTentative;
-    });
-    if (confirmed.length) {
-      list = confirmed;
-    } else if (list.every(function (s) {
-      return s.isTentative;
-    })) {
-      return (
-        '<div class="schedule-group-grid schedule-group-grid--meta" style="--sg-cols:1">' +
-        '<div class="schedule-group-row">' +
-        '<span class="sg-label">' + escapeHtml('場所：') + '</span>' +
-        '<span class="sg-cell">' + escapeHtml('未定（体育館未確定）') + '</span>' +
-        '</div></div>'
-      );
     }
     var cols = list.length;
     var rowDefs = [
@@ -450,6 +434,13 @@
     return escapeHtml(t);
   }
 
+  function shouldShowNextMonthCalendar() {
+    if (typeof shouldIncludeNextMonthInVolleyCalendar === 'function') {
+      return shouldIncludeNextMonthInVolleyCalendar();
+    }
+    return new Date().getDate() >= 23;
+  }
+
   function renderCalendars() {
     var area = document.getElementById('calendarArea');
     area.innerHTML = '';
@@ -461,12 +452,14 @@
 
     var now = new Date();
     var m1 = { year: now.getFullYear(), month: now.getMonth() + 1 };
-    var next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    var m2 = { year: next.getFullYear(), month: next.getMonth() + 1 };
 
     var frag = document.createDocumentFragment();
     frag.appendChild(buildMonthCalendar(m1.year, m1.month));
-    frag.appendChild(buildMonthCalendar(m2.year, m2.month));
+    if (shouldShowNextMonthCalendar()) {
+      var next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      var m2 = { year: next.getFullYear(), month: next.getMonth() + 1 };
+      frag.appendChild(buildMonthCalendar(m2.year, m2.month));
+    }
     area.appendChild(frag);
   }
 
@@ -630,22 +623,6 @@
 
   function formatCalendarLocationHtml(schedules) {
     var list = (schedules || []).slice();
-    var confirmed = list.filter(function (s) {
-      return !s.isTentative;
-    });
-    if (confirmed.length) {
-      list = confirmed;
-    } else if (list.some(function (s) {
-      return s.isTentative;
-    })) {
-      return (
-        '<span class="chip-loc-line">' +
-        locationPinSvgHtml() +
-        '<span class="chip-loc-text">' +
-        escapeHtml('未定') +
-        '</span></span>'
-      );
-    }
     var seen = {};
     var locs = [];
     list.forEach(function (s) {
@@ -682,9 +659,6 @@
 
   function createTimeGroupChip(schedules) {
     var sorted = (schedules || []).slice().sort(function (a, b) {
-      if (!!a.isTentative !== !!b.isTentative) {
-        return a.isTentative ? 1 : -1;
-      }
       var la = String(a.location || '');
       var lb = String(b.location || '');
       if (la !== lb) {
@@ -692,20 +666,13 @@
       }
       return String(a.scheduleId || '').localeCompare(String(b.scheduleId || ''), 'ja');
     });
-    var displaySchedules = sorted.filter(function (s) {
-      return !s.isTentative;
-    });
-    if (!displaySchedules.length) {
-      displaySchedules = sorted;
-    }
+    var displaySchedules = sorted;
     var primary = displaySchedules[0];
     var agg = aggregateGroupCounts(displaySchedules);
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'event-chip';
-    if (primary && primary.isTentative) {
-      btn.classList.add('event-chip--tentative');
-    } else if (agg.total >= HIGH_ATTENDANCE_THRESHOLD) {
+    if (agg.total >= HIGH_ATTENDANCE_THRESHOLD) {
       btn.classList.add('high-attendance');
     }
     var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';

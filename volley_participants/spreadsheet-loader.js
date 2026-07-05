@@ -7,7 +7,6 @@
 
   var STATUS = { CONFIRMED: 1, PENDING: 2, ABSENT: 3 };
   var HIGH_ATTENDANCE_THRESHOLD = 8;
-  var DEFAULT_PARTICIPATION_TIME_SLOT = '19:15-21:45';
   var PARTICIPANT_REMARK_COL = 5;
   var PARTICIPANT_INPUT_AT_COL = 6;
   var BUNDLE_IDB_NAME = 'volley-viewer-gviz';
@@ -230,27 +229,6 @@
     );
   }
 
-  function scheduleDateIsoTimeKey(dateIso, timeSlot) {
-    return String(dateIso || '').trim() + '\x1f' + normalizeTimeSlotForKey(timeSlot);
-  }
-
-  function registerConfirmedScheduleIndex(existingKeys, existingDateIsoTimes, schedule) {
-    if (!schedule || schedule.isTentative) {
-      return;
-    }
-    existingKeys[scheduleTimeGroupKey(schedule.dateLabel, schedule.timeSlot)] = true;
-    if (!schedule.dateIso) {
-      return;
-    }
-    existingDateIsoTimes[scheduleDateIsoTimeKey(schedule.dateIso, schedule.timeSlot)] = true;
-    var isoParts = String(schedule.dateIso).split('-');
-    if (isoParts.length === 3) {
-      var canonicalLabel =
-        parseInt(isoParts[1], 10) + '/' + parseInt(isoParts[2], 10);
-      existingKeys[scheduleTimeGroupKey(canonicalLabel, schedule.timeSlot)] = true;
-    }
-  }
-
   var WEEKDAYS_JP = ['日', '月', '火', '水', '木', '金', '土'];
 
   function formatScheduleId(num) {
@@ -315,29 +293,29 @@
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 
-  function isTodayDate(d) {
-    if (!(d instanceof Date) || isNaN(d.getTime())) {
-      return false;
-    }
-    return stripTime(d).getTime() === stripTime(new Date()).getTime();
-  }
-
-  function isTodayDateIso(dateIso) {
-    return String(dateIso || '') === formatDateIso(stripTime(new Date()));
+  /** 来月分は毎月23日以降に表示（22日以前は当月のみ） */
+  function shouldIncludeNextMonthInCalendar() {
+    return new Date().getDate() >= 23;
   }
 
   function getTwoMonthRange() {
     var now = new Date();
     var start = new Date(now.getFullYear(), now.getMonth(), 1);
-    var end = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
-    var next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    if (shouldIncludeNextMonthInCalendar()) {
+      var next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return {
+        start: start,
+        end: new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999),
+        displayMonths: [
+          { year: now.getFullYear(), month: now.getMonth() + 1 },
+          { year: next.getFullYear(), month: next.getMonth() + 1 },
+        ],
+      };
+    }
     return {
       start: start,
-      end: end,
-      displayMonths: [
-        { year: now.getFullYear(), month: now.getMonth() + 1 },
-        { year: next.getFullYear(), month: next.getMonth() + 1 },
-      ],
+      end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+      displayMonths: [{ year: now.getFullYear(), month: now.getMonth() + 1 }],
     };
   }
 
@@ -376,11 +354,6 @@
     return y + '-' + m + '-' + day;
   }
 
-  function buildTentativeScheduleId(dateIso, timeSlot) {
-    var t = String(timeSlot || '').replace(/[^0-9]/g, '');
-    return 'T-' + dateIso + '-' + (t || 'default');
-  }
-
   function formatScheduleDateLabel(date) {
     return (
       date.getMonth() +
@@ -391,153 +364,6 @@
       WEEKDAYS_JP[date.getDay()] +
       ')'
     );
-  }
-
-  function iterateFutureDaysInRange(rangeStart, rangeEnd) {
-    var days = [];
-    var start = stripTime(rangeStart);
-    var today = stripTime(new Date());
-    if (start.getTime() < today.getTime()) {
-      start = today;
-    }
-    var end = stripTime(rangeEnd);
-    var d = new Date(start.getTime());
-    while (d.getTime() <= end.getTime()) {
-      days.push(new Date(d.getTime()));
-      d.setDate(d.getDate() + 1);
-    }
-    return days;
-  }
-
-  function countParticipantsGroup(participants) {
-    var confirmed = 0;
-    var pending = 0;
-    var absent = 0;
-    (participants || []).forEach(function (p) {
-      if (p.status === STATUS.CONFIRMED) confirmed++;
-      else if (p.status === STATUS.PENDING) pending++;
-      else if (p.status === STATUS.ABSENT) absent++;
-    });
-    return { confirmed: confirmed, pending: pending, absent: absent };
-  }
-
-  function appendTentativeScheduleEntry(
-    merged,
-    existingKeys,
-    eventDate,
-    dateLabel,
-    timeSlot,
-    participants
-  ) {
-    var gKey = scheduleTimeGroupKey(dateLabel, timeSlot);
-    if (existingKeys[gKey]) {
-      return;
-    }
-    if (isTodayDate(eventDate)) {
-      return;
-    }
-    var counts = countParticipantsGroup(participants);
-    var confirmed = counts.confirmed;
-    var pending = counts.pending;
-    var absent = counts.absent;
-    var dateIso = formatDateIso(eventDate);
-    merged.push({
-      scheduleId: buildTentativeScheduleId(dateIso, timeSlot),
-      dateIso: dateIso,
-      dateLabel: dateLabel,
-      year: eventDate.getFullYear(),
-      month: eventDate.getMonth() + 1,
-      day: eventDate.getDate(),
-      location: '',
-      court: '',
-      timeSlot: timeSlot,
-      orgId: '',
-      orgName: '',
-      scheduleRemark: '',
-      confirmed: confirmed,
-      pending: pending,
-      absent: absent,
-      totalCount: confirmed + pending,
-      highAttendance: confirmed + pending >= HIGH_ATTENDANCE_THRESHOLD,
-      countLabel: formatCountLabel(confirmed, pending, absent),
-      isTentative: true,
-    });
-    existingKeys[gKey] = true;
-  }
-
-  function mergeTentativeSchedulesIntoList(
-    schedules,
-    participantsByGroup,
-    rangeStart,
-    rangeEnd
-  ) {
-    var existingKeys = {};
-    var existingDateIsoTimes = {};
-    var merged = (schedules || []).slice();
-    var i;
-    for (i = 0; i < merged.length; i++) {
-      var existing = merged[i];
-      existingKeys[scheduleTimeGroupKey(existing.dateLabel, existing.timeSlot)] = true;
-      registerConfirmedScheduleIndex(existingKeys, existingDateIsoTimes, existing);
-    }
-
-    var days = iterateFutureDaysInRange(rangeStart, rangeEnd);
-    days.forEach(function (d) {
-      var dateLabel = formatScheduleDateLabel(d);
-      var dateIso = formatDateIso(d);
-      if (existingDateIsoTimes[scheduleDateIsoTimeKey(dateIso, DEFAULT_PARTICIPATION_TIME_SLOT)]) {
-        return;
-      }
-      var gKey = scheduleTimeGroupKey(dateLabel, DEFAULT_PARTICIPATION_TIME_SLOT);
-      appendTentativeScheduleEntry(
-        merged,
-        existingKeys,
-        d,
-        dateLabel,
-        DEFAULT_PARTICIPATION_TIME_SLOT,
-        (participantsByGroup && participantsByGroup[gKey]) || []
-      );
-    });
-
-    Object.keys(participantsByGroup || {}).forEach(function (gKey) {
-      if (existingKeys[gKey]) {
-        return;
-      }
-      var parts = gKey.split('\x1f');
-      var dateLabel = String(parts[0] || '').trim();
-      var timeSlot = String(parts[1] || '').trim();
-      if (!dateLabel || !timeSlot) {
-        return;
-      }
-      var eventDate = parseScheduleDateInRange(dateLabel, rangeStart, rangeEnd);
-      if (!eventDate) {
-        return;
-      }
-      appendTentativeScheduleEntry(
-        merged,
-        existingKeys,
-        eventDate,
-        dateLabel,
-        timeSlot,
-        participantsByGroup[gKey] || []
-      );
-    });
-
-    merged = merged.filter(function (s) {
-      if (!s.isTentative || !s.dateIso) {
-        return true;
-      }
-      if (isTodayDateIso(s.dateIso)) {
-        return false;
-      }
-      return !existingDateIsoTimes[scheduleDateIsoTimeKey(s.dateIso, s.timeSlot)];
-    });
-
-    merged.sort(function (a, b) {
-      if (a.dateIso !== b.dateIso) return a.dateIso < b.dateIso ? -1 : 1;
-      return a.timeSlot.localeCompare(b.timeSlot, 'ja');
-    });
-    return merged;
   }
 
   function findOrgIdColumnIndex(headers) {
@@ -881,12 +707,6 @@
       partHeaders,
       sidToGroup
     );
-    schedules = mergeTentativeSchedulesIntoList(
-      schedules,
-      participantsByGroup,
-      range.start,
-      range.end
-    );
     return {
       generatedAt: new Date().toISOString(),
       range: {
@@ -939,6 +759,6 @@
   }
 
   global.loadVolleyCalendarBundle = loadVolleyCalendarBundle;
-  global.mergeVolleyTentativeSchedules = mergeTentativeSchedulesIntoList;
   global.getVolleyTwoMonthRange = getTwoMonthRange;
+  global.shouldIncludeNextMonthInVolleyCalendar = shouldIncludeNextMonthInCalendar;
 })(typeof window !== 'undefined' ? window : this);
