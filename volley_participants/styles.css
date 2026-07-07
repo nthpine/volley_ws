@@ -360,6 +360,12 @@ main {
 
 /* 8人以上: 黄色ラメキラキラ（楽しい・開催見込み高） */
 .event-chip.attendance-high {
+  --sparkle-tiny: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M5 0 L5.35 3.8 L9 5 L5.35 6.2 L5 10 L4.65 6.2 L1 5 L4.65 3.8 Z' fill='%23ffffff'/%3E%3C/svg%3E");
+  --sparkle-tiny-gold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M5 0 L5.35 3.8 L9 5 L5.35 6.2 L5 10 L4.65 6.2 L1 5 L4.65 3.8 Z' fill='%23fde68a'/%3E%3C/svg%3E");
+  --sparkle-lucky: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 0 L10.45 8.1 L18 10 L10.45 11.9 L10 20 L9.55 11.9 L2 10 L9.55 8.1 Z' fill='%23ffffff'/%3E%3C/svg%3E");
+  --sparkle-lucky-gold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 0 L10.45 8.1 L18 10 L10.45 11.9 L10 20 L9.55 11.9 L2 10 L9.55 8.1 Z' fill='%23fde68a'/%3E%3C/svg%3E");
+  --sparkle-lucky-tilt: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cg transform='rotate(24 11 11)'%3E%3Cpath d='M11 1 L11.4 8.3 L18 11 L11.4 13.7 L11 21 L10.6 13.7 L4 11 L10.6 8.3 Z' fill='%23ffffff'/%3E%3C/g%3E%3C/svg%3E");
+  --sparkle-star-sm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 0.5 L6.5 4.6 L11 6 L6.5 7.4 L6 11.5 L5.5 7.4 L1 6 L5.5 4.6 Z' fill='%23ffffff'/%3E%3C/svg%3E");
   background-color: #fffbeb;
   color: #a16207;
   border-color: rgba(234, 179, 8, 0.45);
@@ -367,7 +373,7 @@ main {
   isolation: isolate;
 }
 
-/* ラメ粒（細かい点々） */
+/* ちいさな星のラメ */
 .event-chip.attendance-high::before {
   content: '';
   position: absolute;
@@ -375,17 +381,14 @@ main {
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  background-image:
-    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0.35px, transparent 0.36px),
-    radial-gradient(circle, rgba(253, 230, 138, 0.9) 0.3px, transparent 0.31px),
-    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0.25px, transparent 0.26px);
-  background-size: 6px 8px, 9px 11px, 5px 7px;
-  background-position: 0 0, 2px 3px, 4px 1px;
+  background-image: var(--sparkle-tiny), var(--sparkle-tiny-gold);
+  background-size: 13px 15px, 17px 19px;
+  background-position: 0 0, 6px 8px;
   opacity: 0.7;
   animation: lame-grain-twinkle 2.2s steps(3) infinite;
 }
 
-/* 大きめの星型キラキラ */
+/* 伸びたラッキー風キラキラ＋小さな星 */
 .event-chip.attendance-high::after {
   content: '';
   position: absolute;
@@ -393,29 +396,27 @@ main {
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(circle at 18% 24%, #fff 0%, #fff 1px, transparent 1px),
-    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.95) 1.2px, transparent 1.2px),
-    radial-gradient(circle at 82% 68%, #fff 0%, #fff 0.9px, transparent 0.9px),
-    radial-gradient(circle at 34% 76%, #fef3c7 0%, #fef3c7 1px, transparent 1px),
-    radial-gradient(circle at 56% 44%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.9) 0.7px, transparent 0.7px),
-    radial-gradient(circle at 42% 16%, #fff 0%, #fff 0.8px, transparent 0.8px),
-    linear-gradient(90deg, transparent 49.5%, #fff 49.5%, #fff 50.5%, transparent 50.5%),
-    linear-gradient(0deg, transparent 49.5%, #fff 49.5%, #fff 50.5%, transparent 50.5%),
-    linear-gradient(90deg, transparent 49.5%, rgba(255, 255, 255, 0.95) 49.5%, rgba(255, 255, 255, 0.95) 50.5%, transparent 50.5%),
-    linear-gradient(0deg, transparent 49.5%, rgba(255, 255, 255, 0.95) 49.5%, rgba(255, 255, 255, 0.95) 50.5%, transparent 50.5%),
-    linear-gradient(90deg, transparent 49.5%, #fde68a 49.5%, #fde68a 50.5%, transparent 50.5%),
-    linear-gradient(0deg, transparent 49.5%, #fde68a 49.5%, #fde68a 50.5%, transparent 50.5%);
+  background-image:
+    var(--sparkle-lucky),
+    var(--sparkle-lucky-tilt),
+    var(--sparkle-lucky-gold),
+    var(--sparkle-star-sm),
+    var(--sparkle-star-sm),
+    var(--sparkle-lucky);
   background-size:
-    auto, auto, auto, auto, auto, auto,
-    5px 5px, 5px 5px,
-    7px 7px, 7px 7px,
-    4px 4px, 4px 4px;
+    14px 14px,
+    11px 11px,
+    9px 9px,
+    7px 7px,
+    6px 6px,
+    8px 8px;
   background-position:
-    0 0, 0 0, 0 0, 0 0, 0 0, 0 0,
-    22% 30%, 22% 30%,
-    68% 62%, 68% 62%,
-    48% 52%, 48% 52%;
+    16% 22%,
+    74% 16%,
+    84% 66%,
+    30% 74%,
+    58% 42%,
+    46% 14%;
   background-repeat: no-repeat;
   opacity: 0.55;
   animation: lame-star-twinkle 1.7s ease-in-out infinite;
