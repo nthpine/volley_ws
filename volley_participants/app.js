@@ -17,7 +17,8 @@
   };
 
   var WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
-  var HIGH_ATTENDANCE_THRESHOLD = 8;
+  var ATTENDANCE_TIER_HIGH = 8;
+  var ATTENDANCE_TIER_MID = 5;
   var CALENDAR_CACHE_KEY = 'volley_calendar_pages_v1';
   var CALENDAR_CACHE_MAX_BYTES = 4 * 1024 * 1024;
   var TODAY_MS = 0;
@@ -602,15 +603,14 @@
     return cell;
   }
 
-  function isHighAttendance(ev) {
-    if (ev.highAttendance === true) {
-      return true;
+  function getAttendanceTierClass(activeCount) {
+    if (activeCount >= ATTENDANCE_TIER_HIGH) {
+      return 'attendance-high';
     }
-    var total =
-      typeof ev.totalCount === 'number'
-        ? ev.totalCount
-        : (ev.confirmed || 0) + (ev.pending || 0);
-    return total >= HIGH_ATTENDANCE_THRESHOLD;
+    if (activeCount >= ATTENDANCE_TIER_MID) {
+      return 'attendance-mid';
+    }
+    return 'attendance-low';
   }
 
   function locationPinSvgHtml() {
@@ -671,12 +671,9 @@
     var agg = aggregateGroupCounts(displaySchedules);
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'event-chip';
-    if (agg.total >= HIGH_ATTENDANCE_THRESHOLD) {
-      btn.classList.add('high-attendance');
-    }
-    var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
     var activeCount = (agg.confirmed || 0) + (agg.pending || 0);
+    btn.className = 'event-chip ' + getAttendanceTierClass(activeCount);
+    var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
     btn.dataset.scheduleId = primary ? String(primary.scheduleId || '') : '';
     btn.setAttribute('data-bg-count', String(activeCount));
     btn.innerHTML =
@@ -764,13 +761,13 @@
       countLines.push('不参加: ✕' + absent + '人');
     }
     var countText = countLines.join('\n');
-    if (active >= HIGH_ATTENDANCE_THRESHOLD) {
+    if (active >= ATTENDANCE_TIER_HIGH) {
       countText += '\n（開催見込み↑）';
     }
     var modalCountEl = document.getElementById('modalCount');
     modalCountEl.textContent = countText;
     modalCountEl.style.whiteSpace = 'pre-line';
-    modalCountEl.classList.toggle('modal-count--hot', active >= HIGH_ATTENDANCE_THRESHOLD);
+    modalCountEl.classList.toggle('modal-count--hot', active >= ATTENDANCE_TIER_HIGH);
 
     var key = exportTimeGroupKey(schedule);
     STATE.currentGroupKey = key;

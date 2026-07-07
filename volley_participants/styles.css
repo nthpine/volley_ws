@@ -313,11 +313,11 @@ main {
   position: relative;
   overflow: hidden;
   text-align: left;
-  border: 1px solid rgba(6, 182, 212, 0.3);
-  border-left: 3px solid var(--primary-bright);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-left: 3px solid rgba(148, 163, 184, 0.5);
   border-radius: 4px;
-  background: var(--primary-soft);
-  color: var(--primary-dark);
+  background: #f1f5f9;
+  color: var(--muted);
   font-size: 0.58rem;
   padding: 2px 4px;
   margin-bottom: 2px;
@@ -328,21 +328,136 @@ main {
 }
 
 .event-chip:hover {
-  background: rgba(6, 182, 212, 0.16);
-  border-color: var(--primary-bright);
-  box-shadow: var(--glow-cyan);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
-.event-chip.high-attendance {
-  background: var(--neon-green-dim);
-  color: #047857;
-  border-color: rgba(5, 150, 105, 0.35);
-  border-left-color: var(--neon-green);
+/* 1〜4人: グレー（開催見込み低） */
+.event-chip.attendance-low {
+  background: #f1f5f9;
+  color: var(--muted);
+  border-color: rgba(148, 163, 184, 0.35);
+  border-left-color: rgba(148, 163, 184, 0.5);
 }
 
-.event-chip.high-attendance:hover {
-  background: rgba(5, 150, 105, 0.18);
-  box-shadow: var(--glow-green);
+.event-chip.attendance-low:hover {
+  background: #e8edf3;
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+/* 5〜7人: ブルー（開催ありそう） */
+.event-chip.attendance-mid {
+  background: rgba(37, 99, 235, 0.08);
+  color: #1e40af;
+  border-color: rgba(37, 99, 235, 0.28);
+  border-left-color: #3b82f6;
+}
+
+.event-chip.attendance-mid:hover {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.4);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2), 0 2px 12px rgba(37, 99, 235, 0.12);
+}
+
+/* 8人以上: 黄色ラメキラキラ（楽しい・開催見込み高） */
+.event-chip.attendance-high {
+  background-color: #fffbeb;
+  color: #a16207;
+  border-color: rgba(234, 179, 8, 0.45);
+  border-left-color: #eab308;
+  isolation: isolate;
+}
+
+/* ラメ粒（細かい点々） */
+.event-chip.attendance-high::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95) 0.35px, transparent 0.36px),
+    radial-gradient(circle, rgba(253, 230, 138, 0.9) 0.3px, transparent 0.31px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.8) 0.25px, transparent 0.26px);
+  background-size: 6px 8px, 9px 11px, 5px 7px;
+  background-position: 0 0, 2px 3px, 4px 1px;
+  opacity: 0.7;
+  animation: lame-grain-twinkle 2.2s steps(3) infinite;
+}
+
+/* 大きめの星型キラキラ */
+.event-chip.attendance-high::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 24%, #fff 0%, #fff 1px, transparent 1px),
+    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.95) 1.2px, transparent 1.2px),
+    radial-gradient(circle at 82% 68%, #fff 0%, #fff 0.9px, transparent 0.9px),
+    radial-gradient(circle at 34% 76%, #fef3c7 0%, #fef3c7 1px, transparent 1px),
+    radial-gradient(circle at 56% 44%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.9) 0.7px, transparent 0.7px),
+    radial-gradient(circle at 42% 16%, #fff 0%, #fff 0.8px, transparent 0.8px),
+    linear-gradient(90deg, transparent 49.5%, #fff 49.5%, #fff 50.5%, transparent 50.5%),
+    linear-gradient(0deg, transparent 49.5%, #fff 49.5%, #fff 50.5%, transparent 50.5%),
+    linear-gradient(90deg, transparent 49.5%, rgba(255, 255, 255, 0.95) 49.5%, rgba(255, 255, 255, 0.95) 50.5%, transparent 50.5%),
+    linear-gradient(0deg, transparent 49.5%, rgba(255, 255, 255, 0.95) 49.5%, rgba(255, 255, 255, 0.95) 50.5%, transparent 50.5%),
+    linear-gradient(90deg, transparent 49.5%, #fde68a 49.5%, #fde68a 50.5%, transparent 50.5%),
+    linear-gradient(0deg, transparent 49.5%, #fde68a 49.5%, #fde68a 50.5%, transparent 50.5%);
+  background-size:
+    auto, auto, auto, auto, auto, auto,
+    5px 5px, 5px 5px,
+    7px 7px, 7px 7px,
+    4px 4px, 4px 4px;
+  background-position:
+    0 0, 0 0, 0 0, 0 0, 0 0, 0 0,
+    22% 30%, 22% 30%,
+    68% 62%, 68% 62%,
+    48% 52%, 48% 52%;
+  background-repeat: no-repeat;
+  opacity: 0.55;
+  animation: lame-star-twinkle 1.7s ease-in-out infinite;
+}
+
+.event-chip.attendance-high:hover {
+  background-color: #fef9c3;
+  border-color: rgba(234, 179, 8, 0.55);
+  box-shadow: none;
+}
+
+.event-chip.attendance-high:hover::before {
+  opacity: 0.95;
+}
+
+.event-chip.attendance-high:hover::after {
+  opacity: 0.85;
+}
+
+@keyframes lame-grain-twinkle {
+  0%, 100% { opacity: 0.4; }
+  33% { opacity: 0.85; }
+  66% { opacity: 0.55; }
+}
+
+@keyframes lame-star-twinkle {
+  0%, 100% {
+    opacity: 0.25;
+    filter: brightness(1);
+  }
+  20% {
+    opacity: 0.9;
+    filter: brightness(1.15);
+  }
+  45% {
+    opacity: 0.4;
+    filter: brightness(1);
+  }
+  70% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
 }
 
 .event-chip .chip-bg-count {
@@ -356,26 +471,22 @@ main {
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.05em;
-  color: rgba(124, 58, 237, 0.55);
+  color: rgba(148, 163, 184, 0.42);
   pointer-events: none;
   user-select: none;
   z-index: 0;
 }
 
-.event-chip.high-attendance .chip-bg-count {
-  color: rgba(4, 120, 87, 0.62);
+.event-chip.attendance-mid .chip-bg-count {
+  color: rgba(37, 99, 235, 0.38);
+}
+
+.event-chip.attendance-high .chip-bg-count {
+  color: rgba(202, 138, 4, 0.45);
 }
 
 .event-chip[data-bg-count="0"] .chip-bg-count {
   color: rgba(148, 163, 184, 0.42);
-}
-
-.day-cell.past .event-chip .chip-bg-count {
-  color: rgba(124, 58, 237, 0.3);
-}
-
-.day-cell.past .event-chip.high-attendance .chip-bg-count {
-  color: rgba(4, 120, 87, 0.35);
 }
 
 .event-chip .chip-location,
@@ -384,11 +495,36 @@ main {
   z-index: 1;
 }
 
-.day-cell.past .event-chip.high-attendance {
-  background: rgba(5, 150, 105, 0.06);
-  color: rgba(5, 150, 105, 0.55);
-  border-color: rgba(5, 150, 105, 0.2);
-  border-left-color: rgba(5, 150, 105, 0.35);
+.day-cell.past .event-chip .chip-bg-count {
+  color: rgba(148, 163, 184, 0.3);
+}
+
+.day-cell.past .event-chip.attendance-mid .chip-bg-count {
+  color: rgba(37, 99, 235, 0.22);
+}
+
+.day-cell.past .event-chip.attendance-high .chip-bg-count {
+  color: rgba(202, 138, 4, 0.28);
+}
+
+.day-cell.past .event-chip.attendance-mid {
+  background: rgba(37, 99, 235, 0.05);
+  color: rgba(30, 64, 175, 0.55);
+  border-color: rgba(37, 99, 235, 0.18);
+  border-left-color: rgba(59, 130, 246, 0.35);
+}
+
+.day-cell.past .event-chip.attendance-high {
+  background-color: rgba(254, 243, 199, 0.45);
+  color: rgba(161, 98, 7, 0.55);
+  border-color: rgba(234, 179, 8, 0.2);
+  border-left-color: rgba(234, 179, 8, 0.35);
+}
+
+.day-cell.past .event-chip.attendance-high::before,
+.day-cell.past .event-chip.attendance-high::after {
+  animation: none;
+  opacity: 0.25;
 }
 
 .event-chip .filter-status {
@@ -546,8 +682,12 @@ input.name-locked {
   font-weight: 600;
 }
 
-.event-chip.high-attendance .count-absent {
-  color: rgba(5, 150, 105, 0.65);
+.event-chip.attendance-mid .count-absent {
+  color: rgba(37, 99, 235, 0.75);
+}
+
+.event-chip.attendance-high .count-absent {
+  color: rgba(161, 98, 7, 0.7);
 }
 
 .day-cell.past .event-chip .count-absent {
@@ -793,7 +933,7 @@ input.name-locked {
 }
 
 .modal-count--hot {
-  color: var(--neon-green) !important;
+  color: #ca8a04 !important;
   font-weight: 700;
 }
 
