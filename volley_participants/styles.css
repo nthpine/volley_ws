@@ -466,10 +466,12 @@ main {
 
 .event-chip .chip-bg-count {
   position: absolute;
-  inset: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 0.1rem 0.05rem 0;
   font-family: var(--font-display);
   font-size: clamp(2rem, 58cqi, 2.85rem);
   font-weight: 700;
