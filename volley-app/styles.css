@@ -1446,6 +1446,13 @@ textarea {
   font-style: italic;
 }
 
+.bulk-loc-line {
+  display: block;
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+}
+
 .bulk-table tr.row-tentative td.col-loc {
   color: var(--muted);
   font-style: italic;
@@ -1456,26 +1463,86 @@ textarea {
   -webkit-overflow-scrolling: touch;
   margin-top: 0.5rem;
   margin-bottom: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
 }
 
 .bulk-table {
   width: max-content;
   min-width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.85rem;
 }
 
 .bulk-table th,
 .bulk-table td {
-  border: 1px solid var(--border);
-  padding: 0.5rem 0.4rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0.45rem 0.4rem;
   vertical-align: middle;
+  background: var(--card);
 }
 
-.bulk-table th {
+.bulk-table th:last-child,
+.bulk-table td:last-child {
+  border-right: none;
+}
+
+.bulk-table thead th {
   background: var(--bg-subtle);
   font-weight: 600;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.bulk-table .col-date,
+.bulk-table .col-time,
+.bulk-table .col-loc {
+  position: sticky;
+  z-index: 2;
+  background: var(--card);
+}
+
+.bulk-table thead .col-date,
+.bulk-table thead .col-time,
+.bulk-table thead .col-loc {
+  z-index: 4;
+  background: var(--bg-subtle);
+}
+
+.bulk-table .col-date {
+  left: 0;
+  min-width: 4.6rem;
+  max-width: 5.2rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bulk-table .col-time {
+  left: 4.6rem;
+  min-width: 4.4rem;
+  max-width: 5rem;
+  white-space: normal;
+  line-height: 1.25;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.bulk-table .col-loc {
+  left: 9rem;
+  min-width: 4.8rem;
+  max-width: 6.5rem;
+  white-space: normal;
+  box-shadow: 6px 0 8px -6px rgba(15, 23, 42, 0.28);
+}
+
+.bulk-date-text,
+.bulk-time-text {
+  display: block;
 }
 
 .bulk-status-group {
@@ -1492,6 +1559,11 @@ textarea {
   padding: 0.35rem 0.45rem;
   font-size: 1rem;
   min-width: 2rem;
+}
+
+.bulk-table .col-status {
+  min-width: 7.5rem;
+  white-space: nowrap;
 }
 
 .bulk-table .col-remark {
@@ -1524,16 +1596,50 @@ textarea {
 }
 
 @media (max-width: 719px) {
-  .bulk-table {
-    min-width: 38rem;
+  .bulk-table .col-date {
+    left: 0;
+    min-width: 4.2rem;
+    max-width: 4.6rem;
+    font-size: 0.78rem;
+    padding-left: 0.35rem;
+    padding-right: 0.3rem;
   }
+
+  .bulk-table .col-time {
+    left: 4.2rem;
+    min-width: 3.8rem;
+    max-width: 4.2rem;
+    font-size: 0.72rem;
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
+  }
+
+  .bulk-table .col-loc {
+    left: 8rem;
+    min-width: 4.2rem;
+    max-width: 5.5rem;
+    font-size: 0.78rem;
+    padding-left: 0.3rem;
+    padding-right: 0.35rem;
+  }
+
+  .bulk-table .col-status {
+    min-width: 7.2rem;
+  }
+
   .bulk-table .col-remark {
-    min-width: 12rem;
+    min-width: 10rem;
     width: auto;
   }
+
   .bulk-remark-input {
-    min-width: 11rem;
+    min-width: 9rem;
     font-size: 16px;
     padding: 0.5rem 0.65rem;
+  }
+
+  .bulk-status-group .status-option span {
+    padding: 0.4rem 0.5rem;
+    min-width: 2.1rem;
   }
 }

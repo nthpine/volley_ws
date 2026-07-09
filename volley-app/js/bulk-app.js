@@ -178,14 +178,26 @@
     var out = [];
     (list || []).forEach(function (s) {
       var loc = String(s.location || '').trim();
-      var court = String(s.court || '').trim();
-      var label = loc;
-      if (court) label = loc ? loc + '（' + court + '）' : court;
-      if (!label || seen[label]) return;
-      seen[label] = true;
-      out.push(label);
+      if (!loc || seen[loc]) return;
+      seen[loc] = true;
+      out.push(loc);
     });
     return out;
+  }
+
+  function formatLocationsHtml(locations, isTentative) {
+    if (isTentative) {
+      return '<span class="bulk-loc-tentative">未定</span>';
+    }
+    var locs = locations || [];
+    if (!locs.length) {
+      return '';
+    }
+    return locs
+      .map(function (loc) {
+        return '<span class="bulk-loc-line">' + escapeHtml(loc) + '</span>';
+      })
+      .join('');
   }
 
   function buildRowFromGroup(list, memberName) {
@@ -220,6 +232,26 @@
     var day = d.getDate();
     var w = WEEKDAYS[d.getDay()];
     return y + '/' + m + '/' + day + '(' + w + ')';
+  }
+
+  /** 一括テーブル表示用: 年なしの短い日付 */
+  function formatBulkDateLabel(dateLabel, dateIso) {
+    if (dateIso && /^\d{4}-\d{2}-\d{2}$/.test(dateIso)) {
+      var parts = dateIso.split('-');
+      var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return Number(parts[1]) + '/' + Number(parts[2]) + '(' + WEEKDAYS[d.getDay()] + ')';
+    }
+    var s = String(dateLabel || '').trim();
+    var m = s.match(/(\d{1,2})\/(\d{1,2})\s*\(([^)]+)\)/);
+    if (m) return Number(m[1]) + '/' + Number(m[2]) + '(' + m[3] + ')';
+    return s.replace(/^\d{4}\//, '');
+  }
+
+  /** 一括テーブル表示用: 時間帯を改行しやすい形に */
+  function formatBulkTimeSlot(timeSlot) {
+    return String(timeSlot || '')
+      .trim()
+      .replace(/\s*[-–—～〜~]\s*/g, '-');
   }
 
   function formatDateIso(d) {
@@ -363,20 +395,19 @@
       var checked2 = row.status === 2 ? ' checked' : '';
       var checked3 = row.status === 3 ? ' checked' : '';
       var regBadge = row.hasRegistration ? '' : '<span class="bulk-reg-badge">未登録</span>';
-      var locHtml = row.isTentative
-        ? '<span class="bulk-loc-tentative">未定</span>'
-        : escapeHtml(row.locationSummary || '');
       tr.innerHTML =
         '<td class="col-date" data-label="日付">' +
-        escapeHtml(row.dateLabel) +
-        '</td>' +
+        '<span class="bulk-date-text">' +
+        escapeHtml(formatBulkDateLabel(row.dateLabel, row.dateIso)) +
+        '</span></td>' +
         '<td class="col-time" data-label="時間帯">' +
-        escapeHtml(row.timeSlot) +
-        '</td>' +
+        '<span class="bulk-time-text">' +
+        escapeHtml(formatBulkTimeSlot(row.timeSlot)) +
+        '</span></td>' +
         '<td class="col-loc" data-label="場所">' +
-        locHtml +
+        formatLocationsHtml(row.locations, row.isTentative) +
         '</td>' +
-        '<td data-label="ステータス">' +
+        '<td class="col-status" data-label="ステータス">' +
         regBadge +
         '<div class="bulk-status-group">' +
         '<label class="status-option confirmed"><input type="radio" name="' +
