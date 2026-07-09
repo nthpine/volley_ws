@@ -1,13 +1,17 @@
-# volley_participants（閲覧サイト）
+# volley_participants（閲覧サイト・レガシー）
 
-バレーボール参加管理の **閲覧専用** サイト（GitHub Pages）です。  
+> **本番は Vercel 統合アプリ** [`volley-app/`](../volley-app/) を利用してください。  
+> 本番 URL: https://volley-participants.vercel.app/ （一括登録: `/bulk`）
+
+本フォルダは GitHub Pages 互換の **閲覧サイト** です。  
 [basket spreadsheet-viewer](../basket_ws/spreadsheet-viewer) と同様、**公開スプレッドシートを gviz CSV で直接読み** カレンダーと参加者一覧を表示します。
 
 | 用途 | URL |
 |------|-----|
-| 閲覧 | https://nthpine.github.io/volley_ws/volley_participants/ |
-| 一括登録・変更 | `config.js` の `BULK_REGISTER_URL`（GAS Web アプリ） |
-| 詳細画面からのステータス変更 | 同上 GAS（`doPost` / `action: saveParticipation`） |
+| 本番（推奨） | https://volley-participants.vercel.app/ |
+| 閲覧（GitHub Pages・レガシー） | https://nthpine.github.io/volley_ws/volley_participants/ |
+| 一括登録・変更 | 本番は `/bulk`。レガシーは `config.js` の `BULK_REGISTER_URL`（GAS） |
+| 詳細画面からのステータス変更 | GAS（`doPost` / `action: saveParticipation`） |
 
 **誰かがシート（または GAS 一括登録）で参加状況を更新すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。** GitHub Actions や `calendar.json` の手動同期は不要です。
 

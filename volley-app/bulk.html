@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>バレーボール参加管理（一括登録）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <h1>バレーボール参加管理（一括登録）</h1>
+      <div class="header-actions">
+        <a class="header-link-btn" id="calendarLink" href="/">カレンダーへ戻る</a>
+        <button type="button" class="refresh-btn" id="refreshBulkBtn" title="スプレッドシートから再取得">更新</button>
+        <div id="refreshSpinner" class="header-refresh-spinner" style="display:none;" aria-hidden="true"></div>
+      </div>
+    </div>
+    <p>名前を1人選び、当月・来月の日程に ○△✕ を付けて一括保存できます。</p>
+  </header>
+
+  <main>
+    <div id="errorArea"></div>
+    <div id="loadingArea" class="loading-panel" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>データを読み込んでいます…</p>
+    </div>
+
+    <section id="bulkArea" class="bulk-panel" style="display:none;">
+      <h2 class="bulk-title">一括登録・ステータス変更</h2>
+
+      <div class="bulk-member-register">
+        <h3>参加者名の登録</h3>
+        <div class="bulk-register-toolbar">
+          <div class="bulk-field">
+            <label for="memberRegisterInput">参加者名</label>
+            <input type="text" id="memberRegisterInput" placeholder="例: 山田 太郎" autocomplete="name" />
+          </div>
+          <div class="bulk-field-action">
+            <button type="button" class="member-register-btn" id="memberRegisterBtn">登録</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bulk-view-tabs" role="tablist" aria-label="日程表示">
+        <button type="button" class="bulk-view-tab active" id="bulkTabConfirmed" data-mode="confirmed" role="tab" aria-selected="true">体育館確定済み</button>
+        <button type="button" class="bulk-view-tab" id="bulkTabAll" data-mode="all" role="tab" aria-selected="false">全日程（体育館未定含む）</button>
+        <p class="bulk-view-tab-hint" id="bulkViewHint">体育館の予約が確定している日程のみ表示します。</p>
+      </div>
+
+      <div class="bulk-toolbar">
+        <div class="bulk-field">
+          <label for="bulkMemberSelect">名前</label>
+          <select id="bulkMemberSelect">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+      </div>
+
+      <p id="bulkTableHint" class="bulk-block-hint">名前を選ぶと日程テーブルが表示されます。</p>
+      <p id="bulkTableEmpty" class="bulk-block-empty" style="display:none;">表示できる日程がありません。</p>
+      <div id="bulkTableLoading" class="bulk-block-loading" style="display:none;" aria-hidden="true">
+        <div class="loading-spinner loading-spinner--sm" aria-hidden="true"></div>
+        <span>読み込み中…</span>
+      </div>
+
+      <div id="bulkTableWrap" class="bulk-table-wrap" style="display:none;">
+        <table class="bulk-table">
+          <thead>
+            <tr>
+              <th class="col-date">日付</th>
+              <th class="col-time">時間帯</th>
+              <th class="col-loc">場所</th>
+              <th>ステータス</th>
+              <th class="col-remark">備考</th>
+            </tr>
+          </thead>
+          <tbody id="bulkTableBody"></tbody>
+        </table>
+      </div>
+
+      <button type="button" class="submit-btn" id="bulkSubmitBtn">一括保存</button>
+      <p id="bulkFormMessage" class="form-message"></p>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="js/participant-api.js"></script>
+  <script src="js/spreadsheet-loader.js"></script>
+  <script src="js/bulk-app.js"></script>
+</body>
+</html>

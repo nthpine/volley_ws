@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>バレーボール参加管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <h1>バレーボール参加管理</h1>
+      <div class="header-actions">
+        <a class="header-link-btn" id="bulkRegisterLink" href="/bulk">一括登録</a>
+        <button type="button" class="refresh-btn" id="refreshCalendarBtn" title="スプレッドシートから再取得">更新</button>
+        <div id="refreshSpinner" class="header-refresh-spinner" style="display:none;" aria-hidden="true"></div>
+      </div>
+    </div>
+    <p id="periodLabel">読み込み中…</p>
+  </header>
+
+  <main>
+    <div id="errorArea"></div>
+    <div id="loadingArea" class="loading-panel" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>カレンダーを読み込んでいます…</p>
+    </div>
+    <div id="calendarArea" class="calendars" style="display:none;"></div>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-header-top">
+          <div>
+            <div class="modal-title-row">
+              <h2 id="modalTitle">詳細</h2>
+              <span id="modalTimeSlot" class="modal-time-slot"></span>
+            </div>
+            <div class="meta grouped-meta" id="modalMeta"></div>
+            <div id="orgDetailPanel" class="org-detail-panel" aria-live="polite"></div>
+            <p id="modalScheduleRemark" class="schedule-remark"></p>
+          </div>
+          <button type="button" class="close-btn" id="closeModalBtn" aria-label="閉じる">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p id="modalCount" style="font-weight:600;margin-top:0;"></p>
+        <h3 style="font-size:0.95rem;margin:0 0 0.25rem;">参加者一覧</h3>
+        <p class="form-hint" style="margin-top:0;margin-bottom:0.5rem;color:var(--muted);font-size:0.85rem;">
+          下のフォームから参加状況を登録・変更できます
+        </p>
+        <ul id="participantList" class="participant-list"></ul>
+        <p id="emptyParticipants" class="empty-participants" style="display:none;">まだ登録がありません</p>
+        <section id="participantRegisterSection" class="form-section">
+          <h3>参加登録</h3>
+          <p class="form-hint">一覧の名前をタップするとフォームに反映されます</p>
+          <label for="participantMemberSelect">名前</label>
+          <select id="participantMemberSelect">
+            <option value="">選択してください</option>
+          </select>
+          <div class="status-group" role="radiogroup" aria-label="参加状況">
+            <label class="status-option confirmed">
+              <input type="radio" name="editStatus" value="1" />
+              <span>○</span>
+            </label>
+            <label class="status-option pending">
+              <input type="radio" name="editStatus" value="2" />
+              <span>△</span>
+            </label>
+            <label class="status-option absent">
+              <input type="radio" name="editStatus" value="3" />
+              <span>✕</span>
+            </label>
+          </div>
+          <label for="editRemark">備考（任意）</label>
+          <input type="text" id="editRemark" autocomplete="off" />
+          <button type="button" id="saveParticipantBtn" class="submit-btn">登録</button>
+        </section>
+        <p id="modalFormMessage" class="form-message"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="js/participant-api.js"></script>
+  <script src="js/spreadsheet-loader.js"></script>
+  <script src="js/calendar-app.js"></script>
+</body>
+</html>
