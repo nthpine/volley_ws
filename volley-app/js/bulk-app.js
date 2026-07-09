@@ -4,7 +4,6 @@
 (function () {
   'use strict';
 
-  var DEFAULT_TIME_SLOT = '19:15-21:45';
   var WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
   var STATE = {
@@ -12,7 +11,6 @@
     schedules: [],
     participantsByGroup: {},
     range: null,
-    bulkViewMode: 'confirmed',
     bulkRows: [],
     generatedAt: null,
   };
@@ -22,12 +20,6 @@
     if (calendarLink) {
       calendarLink.href = (CONFIG && CONFIG.CALENDAR_PAGE_PATH) || '/';
     }
-    document.getElementById('bulkTabConfirmed').addEventListener('click', function () {
-      setBulkViewMode('confirmed');
-    });
-    document.getElementById('bulkTabAll').addEventListener('click', function () {
-      setBulkViewMode('all');
-    });
     document.getElementById('memberRegisterBtn').addEventListener('click', onMemberRegister);
     document.getElementById('memberRegisterInput').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
@@ -133,26 +125,6 @@
     }
   }
 
-  function setBulkViewMode(mode) {
-    mode = mode === 'all' ? 'all' : 'confirmed';
-    if (STATE.bulkViewMode === mode) return;
-    STATE.bulkViewMode = mode;
-    document.querySelectorAll('.bulk-view-tab').forEach(function (btn) {
-      var active = btn.dataset.mode === mode;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    var hint = document.getElementById('bulkViewHint');
-    if (hint) {
-      hint.textContent =
-        mode === 'all'
-          ? '当月・来月の全日程を表示します。体育館未定の日は「未定」です。'
-          : '体育館の予約が確定している日程のみ表示します。';
-    }
-    showBulkMessage('', false);
-    rebuildTable();
-  }
-
   function onMemberChange() {
     showBulkMessage('', false);
     rebuildTable();
@@ -226,14 +198,6 @@
     };
   }
 
-  function formatDateLabelFromDate(d) {
-    var y = d.getFullYear();
-    var m = d.getMonth() + 1;
-    var day = d.getDate();
-    var w = WEEKDAYS[d.getDay()];
-    return y + '/' + m + '/' + day + '(' + w + ')';
-  }
-
   /** 一括テーブル表示用: 年なしの短い日付 */
   function formatBulkDateLabel(dateLabel, dateIso) {
     if (dateIso && /^\d{4}-\d{2}-\d{2}$/.test(dateIso)) {
@@ -252,34 +216,6 @@
     return String(timeSlot || '')
       .trim()
       .replace(/\s*[-–—～〜~]\s*/g, '-');
-  }
-
-  function formatDateIso(d) {
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, '0');
-    var day = String(d.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + day;
-  }
-
-  function startOfToday() {
-    var n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
-  }
-
-  function iterateFutureDaysInRange(range) {
-    if (!range) return [];
-    var start = new Date(range.startYear, range.startMonth - 1, 1);
-    var end = new Date(range.endYear, range.endMonth, 0);
-    var today = startOfToday();
-    var days = [];
-    var cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    while (cur <= end) {
-      if (cur >= today) {
-        days.push(new Date(cur.getFullYear(), cur.getMonth(), cur.getDate()));
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return days;
   }
 
   function buildConfirmedRows(memberName) {
@@ -301,62 +237,6 @@
     });
   }
 
-  function buildAllRows(memberName) {
-    var confirmed = buildConfirmedRows(memberName);
-    var byIsoTime = {};
-    confirmed.forEach(function (row) {
-      byIsoTime[row.dateIso + '\x1f' + row.timeSlot] = row;
-    });
-    var rows = [];
-    var included = {};
-    iterateFutureDaysInRange(STATE.range).forEach(function (d) {
-      var dateIso = formatDateIso(d);
-      var key = dateIso + '\x1f' + DEFAULT_TIME_SLOT;
-      if (byIsoTime[key]) {
-        rows.push(byIsoTime[key]);
-        included[byIsoTime[key].groupKey] = true;
-        return;
-      }
-      // 同日に別時間帯の確定がある場合は未定行を足さない（確定行は後で追加）
-      var hasAnyConfirmedSameDay = Object.keys(byIsoTime).some(function (k) {
-        return k.indexOf(dateIso + '\x1f') === 0;
-      });
-      if (hasAnyConfirmedSameDay) return;
-
-      var dateLabel = formatDateLabelFromDate(d);
-      var gKey = groupKey(dateLabel, DEFAULT_TIME_SLOT);
-      var participation = memberName ? findMemberParticipation(gKey, memberName) : null;
-      var row = {
-        groupKey: gKey,
-        primaryScheduleId: '',
-        dateLabel: dateLabel,
-        dateIso: dateIso,
-        timeSlot: DEFAULT_TIME_SLOT,
-        locations: [],
-        locationSummary: '未定',
-        isTentative: true,
-        status: participation ? participation.status : null,
-        remark: participation ? participation.remark || '' : '',
-        hasRegistration: !!participation,
-      };
-      rows.push(row);
-      included[gKey] = true;
-    });
-
-    confirmed.forEach(function (row) {
-      if (!included[row.groupKey]) {
-        rows.push(row);
-        included[row.groupKey] = true;
-      }
-    });
-
-    rows.sort(function (a, b) {
-      if (a.dateIso !== b.dateIso) return a.dateIso < b.dateIso ? -1 : 1;
-      return String(a.timeSlot || '').localeCompare(String(b.timeSlot || ''), 'ja');
-    });
-    return rows;
-  }
-
   function rebuildTable() {
     var memberName = document.getElementById('bulkMemberSelect').value.trim();
     var hint = document.getElementById('bulkTableHint');
@@ -374,8 +254,7 @@
     }
 
     hint.style.display = 'none';
-    STATE.bulkRows =
-      STATE.bulkViewMode === 'all' ? buildAllRows(memberName) : buildConfirmedRows(memberName);
+    STATE.bulkRows = buildConfirmedRows(memberName);
 
     if (!STATE.bulkRows.length) {
       empty.style.display = 'block';

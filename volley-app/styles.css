@@ -312,6 +312,8 @@ main {
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  touch-action: manipulation;
   text-align: left;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-left: 3px solid rgba(148, 163, 184, 0.5);
@@ -1350,6 +1352,14 @@ textarea {
   margin-top: 0.75rem;
 }
 
+.bulk-view-hint-only {
+  margin: 0 0 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .bulk-view-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1547,17 +1557,19 @@ textarea {
 
 .bulk-table .col-date {
   left: 0;
-  min-width: 5.2rem;
-  max-width: 6.2rem;
+  width: 5.6rem;
+  min-width: 5.6rem;
+  max-width: 5.6rem;
   white-space: normal;
   font-variant-numeric: tabular-nums;
   line-height: 1.25;
 }
 
 .bulk-table .col-loc {
-  left: 5.2rem;
-  min-width: 4.8rem;
-  max-width: 6.5rem;
+  left: 5.6rem;
+  width: 5.2rem;
+  min-width: 5.2rem;
+  max-width: 5.2rem;
   white-space: normal;
   box-shadow: 6px 0 8px -6px rgba(15, 23, 42, 0.28);
 }
@@ -1630,17 +1642,19 @@ textarea {
 @media (max-width: 719px) {
   .bulk-table .col-date {
     left: 0;
-    min-width: 4.8rem;
-    max-width: 5.4rem;
+    width: 5rem;
+    min-width: 5rem;
+    max-width: 5rem;
     font-size: 0.78rem;
     padding-left: 0.35rem;
     padding-right: 0.3rem;
   }
 
   .bulk-table .col-loc {
-    left: 4.8rem;
-    min-width: 4.2rem;
-    max-width: 5.5rem;
+    left: 5rem;
+    width: 4.6rem;
+    min-width: 4.6rem;
+    max-width: 4.6rem;
     font-size: 0.78rem;
     padding-left: 0.3rem;
     padding-right: 0.35rem;

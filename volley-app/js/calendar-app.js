@@ -54,10 +54,20 @@
 
   function onCalendarAreaClick(e) {
     var chip = e.target.closest('.event-chip');
-    if (!chip || !chip.dataset.scheduleId) {
+    if (!chip) {
       return;
     }
-    openDetail(chip.dataset.scheduleId);
+    e.preventDefault();
+    var dateIso = chip.dataset.dateIso || '';
+    var timeSlot = chip.dataset.timeSlot || '';
+    var scheduleId = chip.dataset.scheduleId || '';
+    if (dateIso) {
+      openDetailByDateTime(dateIso, timeSlot, scheduleId);
+      return;
+    }
+    if (scheduleId) {
+      openDetail(scheduleId);
+    }
   }
 
   function isCalendarDataEmpty(data) {
@@ -675,7 +685,24 @@
     btn.className = 'event-chip ' + getAttendanceTierClass(activeCount);
     var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
     btn.dataset.scheduleId = primary ? String(primary.scheduleId || '') : '';
+    btn.dataset.dateIso = primary ? String(primary.dateIso || '') : '';
+    btn.dataset.timeSlot = timeSlot;
     btn.setAttribute('data-bg-count', String(activeCount));
+    btn.setAttribute(
+      'aria-label',
+      [
+        primary && primary.dateLabel ? primary.dateLabel : '',
+        timeSlot,
+        sorted
+          .map(function (s) {
+            return String(s.location || '').trim();
+          })
+          .filter(Boolean)
+          .join(' '),
+      ]
+        .filter(Boolean)
+        .join(' ')
+    );
     btn.innerHTML =
       formatChipBgCountHtml(agg) +
       '<span class="chip-location">' + formatCalendarLocationHtml(sorted) + '</span>' +
@@ -684,6 +711,51 @@
       '<span class="chip-counts">' + formatChipCountHtml(agg) + '</span>' +
       '</span>';
     return btn;
+  }
+
+  function findScheduleByDateTime(dateIso, timeSlot, preferredScheduleId) {
+    var iso = String(dateIso || '').trim();
+    var slot = normalizeTimeSlotForKey(timeSlot);
+    var preferred = String(preferredScheduleId || '').trim();
+    var matches = (STATE.schedules || []).filter(function (s) {
+      if (iso && String(s.dateIso || '') !== iso) {
+        return false;
+      }
+      if (slot && normalizeTimeSlotForKey(s.timeSlot) !== slot) {
+        return false;
+      }
+      return true;
+    });
+    if (!matches.length) {
+      return null;
+    }
+    if (preferred) {
+      for (var i = 0; i < matches.length; i++) {
+        if (String(matches[i].scheduleId || '') === preferred) {
+          return matches[i];
+        }
+      }
+    }
+    matches.sort(function (a, b) {
+      var la = String(a.location || '');
+      var lb = String(b.location || '');
+      if (la !== lb) {
+        return la.localeCompare(lb, 'ja');
+      }
+      return String(a.scheduleId || '').localeCompare(String(b.scheduleId || ''), 'ja');
+    });
+    return matches[0];
+  }
+
+  function openDetailByDateTime(dateIso, timeSlot, preferredScheduleId) {
+    var local = findScheduleByDateTime(dateIso, timeSlot, preferredScheduleId);
+    if (!local) {
+      if (preferredScheduleId) {
+        openDetail(preferredScheduleId);
+      }
+      return;
+    }
+    openDetail(local.scheduleId);
   }
 
   function openDetail(scheduleId) {
