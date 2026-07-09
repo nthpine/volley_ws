@@ -396,11 +396,10 @@
       var checked3 = row.status === 3 ? ' checked' : '';
       var regBadge = row.hasRegistration ? '' : '<span class="bulk-reg-badge">未登録</span>';
       tr.innerHTML =
-        '<td class="col-date" data-label="日付">' +
+        '<td class="col-date" data-label="日付・時間">' +
         '<span class="bulk-date-text">' +
         escapeHtml(formatBulkDateLabel(row.dateLabel, row.dateIso)) +
-        '</span></td>' +
-        '<td class="col-time" data-label="時間帯">' +
+        '</span>' +
         '<span class="bulk-time-text">' +
         escapeHtml(formatBulkTimeSlot(row.timeSlot)) +
         '</span></td>' +

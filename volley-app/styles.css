@@ -1308,13 +1308,46 @@ textarea {
 
 .bulk-member-register {
   margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border);
 }
 
-.bulk-member-register h3 {
-  margin: 0 0 0.5rem;
+.bulk-member-register-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
   font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-dim);
+  user-select: none;
+}
+
+.bulk-member-register-summary::-webkit-details-marker {
+  display: none;
+}
+
+.bulk-member-register-summary::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--primary-dim);
+  border-bottom: 2px solid var(--primary-dim);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.bulk-member-register[open] .bulk-member-register-summary::after {
+  transform: rotate(-135deg);
+  margin-top: 0.2rem;
+}
+
+.bulk-member-register .bulk-register-toolbar {
+  margin-top: 0.75rem;
 }
 
 .bulk-view-tabs {
@@ -1500,7 +1533,6 @@ textarea {
 }
 
 .bulk-table .col-date,
-.bulk-table .col-time,
 .bulk-table .col-loc {
   position: sticky;
   z-index: 2;
@@ -1508,7 +1540,6 @@ textarea {
 }
 
 .bulk-table thead .col-date,
-.bulk-table thead .col-time,
 .bulk-table thead .col-loc {
   z-index: 4;
   background: var(--bg-subtle);
@@ -1516,33 +1547,34 @@ textarea {
 
 .bulk-table .col-date {
   left: 0;
-  min-width: 4.6rem;
-  max-width: 5.2rem;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.bulk-table .col-time {
-  left: 4.6rem;
-  min-width: 4.4rem;
-  max-width: 5rem;
+  min-width: 5.2rem;
+  max-width: 6.2rem;
   white-space: normal;
-  line-height: 1.25;
-  font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1.25;
 }
 
 .bulk-table .col-loc {
-  left: 9rem;
+  left: 5.2rem;
   min-width: 4.8rem;
   max-width: 6.5rem;
   white-space: normal;
   box-shadow: 6px 0 8px -6px rgba(15, 23, 42, 0.28);
 }
 
-.bulk-date-text,
+.bulk-date-text {
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .bulk-time-text {
   display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .bulk-status-group {
@@ -1598,29 +1630,24 @@ textarea {
 @media (max-width: 719px) {
   .bulk-table .col-date {
     left: 0;
-    min-width: 4.2rem;
-    max-width: 4.6rem;
+    min-width: 4.8rem;
+    max-width: 5.4rem;
     font-size: 0.78rem;
     padding-left: 0.35rem;
     padding-right: 0.3rem;
   }
 
-  .bulk-table .col-time {
-    left: 4.2rem;
-    min-width: 3.8rem;
-    max-width: 4.2rem;
-    font-size: 0.72rem;
-    padding-left: 0.3rem;
-    padding-right: 0.3rem;
-  }
-
   .bulk-table .col-loc {
-    left: 8rem;
+    left: 4.8rem;
     min-width: 4.2rem;
     max-width: 5.5rem;
     font-size: 0.78rem;
     padding-left: 0.3rem;
     padding-right: 0.35rem;
+  }
+
+  .bulk-time-text {
+    font-size: 0.68rem;
   }
 
   .bulk-table .col-status {

@@ -32,8 +32,10 @@
     <section id="bulkArea" class="bulk-panel" style="display:none;">
       <h2 class="bulk-title">一括登録・ステータス変更</h2>
 
-      <div class="bulk-member-register">
-        <h3>参加者名の登録</h3>
+      <details class="bulk-member-register">
+        <summary class="bulk-member-register-summary">
+          <span>新しい参加者名を登録</span>
+        </summary>
         <div class="bulk-register-toolbar">
           <div class="bulk-field">
             <label for="memberRegisterInput">参加者名</label>
@@ -43,7 +45,7 @@
             <button type="button" class="member-register-btn" id="memberRegisterBtn">登録</button>
           </div>
         </div>
-      </div>
+      </details>
 
       <div class="bulk-view-tabs" role="tablist" aria-label="日程表示">
         <button type="button" class="bulk-view-tab active" id="bulkTabConfirmed" data-mode="confirmed" role="tab" aria-selected="true">体育館確定済み</button>
@@ -71,10 +73,9 @@
         <table class="bulk-table">
           <thead>
             <tr>
-              <th class="col-date">日付</th>
-              <th class="col-time">時間帯</th>
+              <th class="col-date">日付・時間</th>
               <th class="col-loc">場所</th>
-              <th>ステータス</th>
+              <th class="col-status">ステータス</th>
               <th class="col-remark">備考</th>
             </tr>
           </thead>
