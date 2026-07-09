@@ -1036,7 +1036,17 @@ input.name-locked {
 }
 
 .participant-list li:hover {
-  background: var(--primary-soft);
+  background: transparent;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .participant-list li:hover {
+    background: var(--primary-soft);
+  }
+}
+
+.participant-list.participant-list--ignore-pointer {
+  pointer-events: none;
 }
 
 .participant-list li.selected {

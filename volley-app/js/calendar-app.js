@@ -22,6 +22,8 @@
   var CALENDAR_CACHE_KEY = 'volley_calendar_pages_v1';
   var CALENDAR_CACHE_MAX_BYTES = 4 * 1024 * 1024;
   var TODAY_MS = 0;
+  /** モーダル直後の誤タップで参加者行が選択されるのを防ぐ */
+  var PARTICIPANT_SELECT_IGNORE_UNTIL = 0;
 
   function bindUiEvents() {
     document.getElementById('closeModalBtn').addEventListener('click', closeModal);
@@ -776,6 +778,16 @@
 
     STATE.currentGroupKey = exportTimeGroupKey(local);
 
+    // カードタップの同一ジェスチャが参加者行に貫通して選択されるのを防ぐ
+    PARTICIPANT_SELECT_IGNORE_UNTIL = Date.now() + 450;
+    var listEl = document.getElementById('participantList');
+    if (listEl) {
+      listEl.classList.add('participant-list--ignore-pointer');
+      window.setTimeout(function () {
+        listEl.classList.remove('participant-list--ignore-pointer');
+      }, 450);
+    }
+
     document.getElementById('modalOverlay').classList.add('open');
     document.getElementById('modalOverlay').setAttribute('aria-hidden', 'false');
     renderDetailFromSnapshot(local);
@@ -949,6 +961,11 @@
   }
 
   function onParticipantListClick(e) {
+    if (Date.now() < PARTICIPANT_SELECT_IGNORE_UNTIL) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     var li = e.target.closest('#participantList li[data-name]');
     if (!li) {
       return;
