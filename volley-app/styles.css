@@ -301,7 +301,8 @@ main {
   letter-spacing: 0.02em;
 }
 
-.day-num.sun { color: var(--sun); }
+.day-num.sun,
+.day-num.holiday { color: var(--sun); }
 .day-num.sat { color: var(--sat); }
 
 .event-chip {

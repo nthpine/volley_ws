@@ -579,6 +579,90 @@
     return 'future';
   }
 
+  /** 春分・秋分の近似（国立天文台の簡易式） */
+  function calcEquinoxDay(year, isSpring) {
+    var y = year - 1980;
+    var base = isSpring ? 20.8431 : 23.2488;
+    var factor = isSpring ? 0.242194 : 0.242194;
+    return Math.floor(base + factor * y - Math.floor(y / 4));
+  }
+
+  function nthMonday(year, month, n) {
+    var d = new Date(year, month - 1, 1);
+    var firstMon = 1 + ((1 - d.getDay() + 7) % 7);
+    return firstMon + (n - 1) * 7;
+  }
+
+  function holidayKey(year, month, day) {
+    return year + '-' + month + '-' + day;
+  }
+
+  /** 日本の国民の祝日（振替休日・国民の休日含む） */
+  function buildJapaneseHolidaySet(year) {
+    var set = {};
+    function add(m, d) {
+      if (d >= 1 && d <= 31) {
+        set[holidayKey(year, m, d)] = true;
+      }
+    }
+
+    add(1, 1);
+    add(1, nthMonday(year, 1, 2));
+    add(2, 11);
+    add(2, 23);
+    add(3, calcEquinoxDay(year, true));
+    add(4, 29);
+    add(5, 3);
+    add(5, 4);
+    add(5, 5);
+    add(7, nthMonday(year, 7, 3));
+    add(8, 11);
+    add(9, nthMonday(year, 9, 3));
+    add(9, calcEquinoxDay(year, false));
+    add(10, nthMonday(year, 10, 2));
+    add(11, 3);
+    add(11, 23);
+
+    // 国民の休日（祝日に挟まれた平日）
+    var keys = Object.keys(set);
+    keys.forEach(function (key) {
+      var parts = key.split('-').map(Number);
+      var mid = new Date(parts[0], parts[1] - 1, parts[2] + 1);
+      var next = new Date(parts[0], parts[1] - 1, parts[2] + 2);
+      if (mid.getFullYear() !== year) return;
+      var midKey = holidayKey(mid.getFullYear(), mid.getMonth() + 1, mid.getDate());
+      var nextKey = holidayKey(next.getFullYear(), next.getMonth() + 1, next.getDate());
+      if (!set[midKey] && set[nextKey] && mid.getDay() !== 0 && mid.getDay() !== 6) {
+        set[midKey] = true;
+      }
+    });
+
+    // 振替休日（日曜祝日の翌平日）
+    Object.keys(set).forEach(function (key) {
+      var parts = key.split('-').map(Number);
+      var d = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (d.getDay() !== 0) return;
+      var next = new Date(parts[0], parts[1] - 1, parts[2] + 1);
+      while (set[holidayKey(next.getFullYear(), next.getMonth() + 1, next.getDate())]) {
+        next.setDate(next.getDate() + 1);
+      }
+      if (next.getFullYear() === year) {
+        set[holidayKey(next.getFullYear(), next.getMonth() + 1, next.getDate())] = true;
+      }
+    });
+
+    return set;
+  }
+
+  var HOLIDAY_CACHE = {};
+
+  function isJapaneseHoliday(year, month, day) {
+    if (!HOLIDAY_CACHE[year]) {
+      HOLIDAY_CACHE[year] = buildJapaneseHolidaySet(year);
+    }
+    return !!HOLIDAY_CACHE[year][holidayKey(year, month, day)];
+  }
+
   function createDayCell(year, month, day, isOther, cardYear, cardMonth) {
     var cell = document.createElement('div');
     var classes = ['day-cell'];
@@ -595,11 +679,16 @@
 
     var dateObj = new Date(year, month - 1, day);
     var dow = dateObj.getDay();
+    var holiday = isJapaneseHoliday(year, month, day);
 
     var num = document.createElement('div');
     num.className = 'day-num';
-    if (dow === 0) num.classList.add('sun');
-    if (dow === 6) num.classList.add('sat');
+    if (holiday || dow === 0) {
+      num.classList.add('sun');
+      if (holiday) num.classList.add('holiday');
+    } else if (dow === 6) {
+      num.classList.add('sat');
+    }
     num.textContent = day;
     cell.appendChild(num);
 
