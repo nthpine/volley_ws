@@ -22,6 +22,8 @@
   var CALENDAR_CACHE_KEY = 'volley_calendar_pages_v1';
   var CALENDAR_CACHE_MAX_BYTES = 4 * 1024 * 1024;
   var TODAY_MS = 0;
+  var MAP_URL_PREFIX = 'https://www.google.com/maps/search/?api=1&query=';
+  var MAP_URL_CITY_PREFIX = '札幌市立';
   /** モーダル直後の誤タップで参加者行が選択されるのを防ぐ */
   var PARTICIPANT_SELECT_IGNORE_UNTIL = 0;
 
@@ -336,6 +338,43 @@
     return name ? id + '（' + name + '）' : id;
   }
 
+  function normalizePlaceForMapQuery(place) {
+    var t = String(place || '')
+      .replace(/\([^)]*\)/g, '')
+      .replace(/（[^）]*）/g, '')
+      .replace(/\s+/g, '')
+      .trim();
+    if (!t || t === '—') {
+      return '';
+    }
+    return t;
+  }
+
+  function buildFallbackMapUrl(place) {
+    var normalized = normalizePlaceForMapQuery(place);
+    if (!normalized) {
+      return '';
+    }
+    return MAP_URL_PREFIX + encodeURIComponent(MAP_URL_CITY_PREFIX + normalized);
+  }
+
+  function formatLocationMapLinkHtml(place) {
+    var displayText = String(place || '').trim() || '—';
+    var mapUrl = buildFallbackMapUrl(place);
+    if (mapUrl) {
+      return (
+        '<a class="venue-map-link" href="' +
+        escapeHtml(mapUrl) +
+        '" target="_blank" rel="noopener noreferrer" title="地図を開く" aria-label="' +
+        escapeHtml(displayText) +
+        'の地図を開く">' +
+        escapeHtml(displayText) +
+        '</a>'
+      );
+    }
+    return escapeHtml(displayText);
+  }
+
   function buildGroupedScheduleDisplayHtml(schedules) {
     var list = (schedules || []).slice();
     if (!list.length) {
@@ -345,8 +384,9 @@
     var rowDefs = [
       {
         label: '場所：',
+        rawHtml: true,
         values: list.map(function (s) {
-          return String(s.location || '').trim() || '—';
+          return formatLocationMapLinkHtml(s.location);
         }),
       },
       {
@@ -370,7 +410,7 @@
       html += '<div class="schedule-group-row">';
       html += '<span class="sg-label">' + escapeHtml(row.label) + '</span>';
       row.values.forEach(function (val) {
-        html += '<span class="sg-cell">' + escapeHtml(val) + '</span>';
+        html += '<span class="sg-cell">' + (row.rawHtml ? val : escapeHtml(val)) + '</span>';
       });
       html += '</div>';
     });
