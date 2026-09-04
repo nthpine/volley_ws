@@ -598,7 +598,6 @@
     var idxCourt = headers.indexOf('面');
     var idxTime = headers.indexOf('時間帯');
     var orgCol = findOrgIdColumnIndex(headers);
-    var idxScheduleRemark = findScheduleRemarkIndex(headers);
     var sid = canonicalScheduleId(row[idxSid]);
     var orgId = normalizeOrgId(row[orgCol]);
     var org = configMap[orgId] || { orgId: orgId, orgName: '' };
@@ -609,8 +608,7 @@
       timeSlot: idxTime >= 0 ? String(row[idxTime] || '') : '',
       orgId: org.orgId,
       orgName: org.orgName,
-      scheduleRemark:
-        idxScheduleRemark >= 0 ? String(row[idxScheduleRemark] || '').trim() : '',
+      scheduleRemark: '',
     };
   }
 

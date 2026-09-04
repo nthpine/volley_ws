@@ -943,16 +943,8 @@
     document.getElementById('modalTimeSlot').textContent = getDetailTimeSlot(siblings);
     document.getElementById('modalMeta').innerHTML = buildGroupedScheduleDisplayHtml(siblings);
 
-    var remarks = siblings
-      .map(function (s) {
-        return String(s.scheduleRemark || '').trim();
-      })
-      .filter(Boolean);
     var scheduleRemarkEl = document.getElementById('modalScheduleRemark');
-    if (remarks.length) {
-      scheduleRemarkEl.textContent = remarks.join('\n');
-      scheduleRemarkEl.style.display = 'block';
-    } else {
+    if (scheduleRemarkEl) {
       scheduleRemarkEl.textContent = '';
       scheduleRemarkEl.style.display = 'none';
     }
