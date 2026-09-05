@@ -1,5 +1,8 @@
 コミットメッセージを日本語で生成してください
 
+ローカルで作業を始めるときは、まず git pull する。未コミット変更やコンフリクトがある場合は勝手に stash せず、状況を報告する。
+Agentモードで修正したら、コミットして origin の現在ブランチへ必ず push する。ユーザーが「push しないで」と明示したときだけ省略する。force push はしない。
+
 GASの場合、Agentモードで修正後、clasp push -f と clasp deploy を実施してください。
 vercelの場合（volley-app 含む）、Agentモードで修正後、pushやdeployまで自動で実施してください。
 volley_participants（GitHub Pages・レガシー）の場合、Agentモードで修正後、コミットして main へ push まで実施してください。
