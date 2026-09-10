@@ -23,7 +23,35 @@
         config: 'config',
       },
       cacheTtlMs: cfg.CACHE_TTL_MS || 10 * 60 * 1000,
+      supabaseUrl: String(cfg.SUPABASE_URL || '').trim().replace(/\/$/, ''),
+      supabaseAnonKey: String(cfg.SUPABASE_ANON_KEY || '').trim(),
     };
+  }
+
+  function getSupabaseConfig() {
+    var cfg = getConfig();
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      throw new Error('Supabase の URL または anon キーが未設定です（config.js）');
+    }
+    return { url: cfg.supabaseUrl, key: cfg.supabaseAnonKey };
+  }
+
+  async function fetchVolleyParticipations() {
+    var sb = getSupabaseConfig();
+    var url =
+      sb.url +
+      '/rest/v1/volley_participations?select=schedule_id,name,status,remark,updated_at&limit=5000';
+    var res = await fetch(url, {
+      cache: 'no-store',
+      headers: {
+        apikey: sb.key,
+        Authorization: 'Bearer ' + sb.key,
+      },
+    });
+    if (!res.ok) {
+      throw new Error('参加状況の取得に失敗しました（HTTP ' + res.status + '）');
+    }
+    return res.json();
   }
 
   function csvUrl(spreadsheetId, sheetName) {
@@ -545,6 +573,61 @@
     return result;
   }
 
+  function buildParticipantsByTimeGroupFromDb(participations, sidToGroup) {
+    var byGroupName = {};
+    (participations || []).forEach(function (row) {
+      var sid = canonicalScheduleId(row.schedule_id);
+      if (!sid || !sidToGroup[sid]) return;
+      var gKey = sidToGroup[sid].groupKey;
+      var pName = String(row.name || '').trim();
+      if (!pName) return;
+      var st = parseInt(String(row.status).trim(), 10);
+      var updatedAt = String(row.updated_at || '').trim();
+      var remark = String(row.remark || '').trim();
+      if (!byGroupName[gKey]) byGroupName[gKey] = {};
+      if (
+        !byGroupName[gKey][pName] ||
+        updatedAt >= (byGroupName[gKey][pName]._updatedAt || '')
+      ) {
+        byGroupName[gKey][pName] = {
+          name: pName,
+          status: st,
+          statusLabel: statusLabel(st),
+          remark: remark,
+          _updatedAt: updatedAt,
+        };
+      }
+    });
+    var result = {};
+    Object.keys(byGroupName).forEach(function (gKey2) {
+      var list = [];
+      Object.keys(byGroupName[gKey2]).forEach(function (name) {
+        delete byGroupName[gKey2][name]._updatedAt;
+        list.push(byGroupName[gKey2][name]);
+      });
+      list.sort(function (a, b) {
+        if (a.status !== b.status) return a.status - b.status;
+        return a.name.localeCompare(b.name, 'ja');
+      });
+      result[gKey2] = list;
+    });
+    return result;
+  }
+
+  function buildParticipantCountsByTimeGroupFromDb(participantsByGroup) {
+    var result = {};
+    Object.keys(participantsByGroup || {}).forEach(function (gKey) {
+      var counts = { confirmed: 0, pending: 0, absent: 0 };
+      (participantsByGroup[gKey] || []).forEach(function (p) {
+        if (p.status === STATUS.CONFIRMED) counts.confirmed++;
+        else if (p.status === STATUS.PENDING) counts.pending++;
+        else if (p.status === STATUS.ABSENT) counts.absent++;
+      });
+      result[gKey] = counts;
+    });
+    return result;
+  }
+
   function buildParticipantsByTimeGroupFromRows(partRows, partHeaders, sidToGroup) {
     if (!partRows || partRows.length < 2) return {};
     var headers = partHeaders;
@@ -680,19 +763,17 @@
     return out;
   }
 
-  function buildCalendarFromSheets(sheetData) {
+  function buildCalendarFromSheets(sheetData, participations) {
     var range = getTwoMonthRange();
     var configMap = buildConfigMap(sheetData.config);
     var schedRows = sheetData.schedules;
     var schedHeaders = schedRows.length > 0 ? schedRows[0] : [];
-    var partRows = sheetData.participants;
-    var partHeaders = partRows.length > 0 ? partRows[0] : [];
     var sidToGroup = buildScheduleIdToTimeGroupMapFromRows(schedRows, schedHeaders);
-    var countsByTimeGroup = loadParticipantCountsByTimeGroup(
-      partRows,
-      partHeaders,
+    var participantsByGroup = buildParticipantsByTimeGroupFromDb(
+      participations,
       sidToGroup
     );
+    var countsByTimeGroup = buildParticipantCountsByTimeGroupFromDb(participantsByGroup);
     var schedules = loadSchedulesInRange(
       range.start,
       range.end,
@@ -701,11 +782,6 @@
       schedRows,
       schedHeaders,
       range.displayMonths
-    );
-    var participantsByGroup = buildParticipantsByTimeGroupFromRows(
-      partRows,
-      partHeaders,
-      sidToGroup
     );
     return {
       generatedAt: new Date().toISOString(),
@@ -725,15 +801,13 @@
   async function fetchAllSheets(spreadsheetId, sheetNames) {
     var results = await Promise.all([
       fetchSheetRows(spreadsheetId, sheetNames.schedules),
-      fetchSheetRows(spreadsheetId, sheetNames.participants),
       fetchSheetRows(spreadsheetId, sheetNames.members),
       fetchSheetRows(spreadsheetId, sheetNames.config),
     ]);
     return {
       schedules: results[0],
-      participants: results[1],
-      members: results[2],
-      config: results[3],
+      members: results[1],
+      config: results[2],
     };
   }
 
@@ -752,8 +826,11 @@
       var cached = await readBundleCache(cacheKey, cfg.cacheTtlMs);
       if (cached) return cached;
     }
-    var sheetData = await fetchAllSheets(cfg.spreadsheetId, cfg.sheets);
-    var bundle = buildCalendarFromSheets(sheetData);
+    var results = await Promise.all([
+      fetchAllSheets(cfg.spreadsheetId, cfg.sheets),
+      fetchVolleyParticipations(),
+    ]);
+    var bundle = buildCalendarFromSheets(results[0], results[1]);
     await writeBundleCache(cacheKey, bundle);
     return bundle;
   }
@@ -761,4 +838,6 @@
   global.loadVolleyCalendarBundle = loadVolleyCalendarBundle;
   global.getVolleyTwoMonthRange = getTwoMonthRange;
   global.shouldIncludeNextMonthInVolleyCalendar = shouldIncludeNextMonthInCalendar;
+  global.volleyFormatCountLabel = formatCountLabel;
+  global.fetchVolleyParticipations = fetchVolleyParticipations;
 })(typeof window !== 'undefined' ? window : this);

@@ -13,7 +13,7 @@
 | 一括登録・変更 | 本番は `/bulk`。レガシーは `config.js` の `BULK_REGISTER_URL`（GAS） |
 | 詳細画面からのステータス変更 | GAS（`doPost` / `action: saveParticipation`） |
 
-**誰かがシート（または GAS 一括登録）で参加状況を更新すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。** GitHub Actions や `calendar.json` の手動同期は不要です。
+**参加状況は Supabase（`volley_participations`）が正本です。** 誰かが保存すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。スプレッドシートの `participants` シートは非同期バックアップ用です。
 
 ---
 
@@ -41,13 +41,15 @@ https://docs.google.com/spreadsheets/d/13bYkVraCvuwbf2cCCGhXfAmfVtZ3znbv7fdq-anx
 ## データの流れ
 
 ```text
-閲覧サイト → docs.google.com (gviz CSV) → スプレッドシート
-一括登録   → GAS Web アプリ → スプレッドシート（書き込み）
+日程・名前マスタ → docs.google.com (gviz CSV) → スプレッドシート（読取）
+参加状況（正本） → Supabase PostgREST          → volley_participations
+個別保存         → Supabase upsert（完了で返す）→ GAS へ非同期バックアップ
 ```
 
-- 初回表示: スプレッドシートから取得（IndexedDB に最大 10 分キャッシュ）
+- 日程・名前: `CONFIG.SPREADSHEET_ID` の公開スプレッドシート（`schedules` / `members` / `config`）
+- 参加状況: `CONFIG.SUPABASE_URL` + `CONFIG.SUPABASE_ANON_KEY`
+- 初回表示: シート 3 枚 + Supabase を並列取得（IndexedDB に最大 10 分キャッシュ）
 - 「更新」ボタン: キャッシュを無視して再取得
-- 一括登録後: 閲覧サイトで「更新」または再読み込みで反映
 
 ---
 
@@ -88,7 +90,7 @@ git push
 ```text
 volley_participants/
   index.html
-  config.js              SPREADSHEET_ID, シート名, BULK_REGISTER_URL
+  config.js              SPREADSHEET_ID, SUPABASE_URL/KEY, BULK_REGISTER_URL
   spreadsheet-loader.js    gviz 取得 + カレンダー組み立て
   participant-api.js       参加状況の保存 API 呼び出し
   app.js                   UI（カレンダー・モーダル）

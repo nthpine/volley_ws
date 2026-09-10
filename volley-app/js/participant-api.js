@@ -1,8 +1,10 @@
 /**
- * GAS Web アプリへ参加状況を POST（個別・一括・名前登録）
+ * 参加状況: Supabase（正本）+ GAS（非同期バックアップ・名前登録）
  */
 (function (global) {
   'use strict';
+
+  var STATUS_LABEL = { 1: '○', 2: '△', 3: '✕' };
 
   function getParticipationApiUrl() {
     var cfg = global.CONFIG || {};
@@ -14,6 +16,28 @@
   function getParticipationApiToken() {
     var cfg = global.CONFIG || {};
     return String(cfg.PARTICIPATION_API_TOKEN || '').trim();
+  }
+
+  function getSupabaseConfig() {
+    var cfg = global.CONFIG || {};
+    var url = String(cfg.SUPABASE_URL || '').trim().replace(/\/$/, '');
+    var key = String(cfg.SUPABASE_ANON_KEY || '').trim();
+    if (!url || !key) {
+      throw new Error('Supabase の URL または anon キーが未設定です（config.js）');
+    }
+    return { url: url, key: key };
+  }
+
+  function supabaseHeaders(key) {
+    return {
+      apikey: key,
+      Authorization: 'Bearer ' + key,
+      'Content-Type': 'application/json',
+    };
+  }
+
+  function statusLabelFromCode(status) {
+    return STATUS_LABEL[status] || String(status);
   }
 
   function postGasAction(payload) {
@@ -58,6 +82,32 @@
       });
   }
 
+  function postGasActionFireAndForget(payload) {
+    postGasAction(payload).catch(function () {
+      /* GAS バックアップ失敗は UI に影響しない */
+    });
+  }
+
+  function upsertParticipations(rows) {
+    var sb = getSupabaseConfig();
+    var url =
+      sb.url +
+      '/rest/v1/volley_participations?on_conflict=schedule_id,name';
+    return fetch(url, {
+      method: 'POST',
+      headers: Object.assign({}, supabaseHeaders(sb.key), {
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      }),
+      body: JSON.stringify(rows),
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.text().then(function (text) {
+          throw new Error('参加状況の保存に失敗しました（HTTP ' + res.status + '）');
+        });
+      }
+    });
+  }
+
   /**
    * @param {string} scheduleId
    * @param {string} name
@@ -65,24 +115,71 @@
    * @param {string} remark
    */
   function saveParticipationRemote(scheduleId, name, status, remark) {
-    return postGasAction({
-      action: 'saveParticipation',
-      scheduleId: scheduleId,
+    var now = new Date().toISOString();
+    var row = {
+      schedule_id: scheduleId,
       name: name,
       status: status,
       remark: remark || '',
+      updated_at: now,
+    };
+    return upsertParticipations([row]).then(function () {
+      var result = {
+        name: name,
+        status: status,
+        statusLabel: statusLabelFromCode(status),
+        remark: remark || '',
+        scheduleId: scheduleId,
+      };
+      postGasActionFireAndForget({
+        action: 'saveParticipation',
+        scheduleId: scheduleId,
+        name: name,
+        status: status,
+        remark: remark || '',
+      });
+      return { ok: true, result: result };
     });
   }
 
   /**
    * @param {string} memberName
-   * @param {Array.<{dateLabel: string, timeSlot: string, status: number, remark?: string}>} updates
+   * @param {Array.<{scheduleId?: string, dateLabel: string, timeSlot: string, status: number, remark?: string}>} updates
    */
   function saveParticipationBulkRemote(memberName, updates) {
-    return postGasAction({
-      action: 'saveParticipationBulk',
-      memberName: memberName,
-      updates: updates || [],
+    var now = new Date().toISOString();
+    var rows = [];
+    var gasUpdates = [];
+    (updates || []).forEach(function (u) {
+      var sid = String(u.scheduleId || '').trim();
+      if (!sid) {
+        return;
+      }
+      rows.push({
+        schedule_id: sid,
+        name: memberName,
+        status: u.status,
+        remark: u.remark || '',
+        updated_at: now,
+      });
+      gasUpdates.push({
+        scheduleId: sid,
+        dateLabel: u.dateLabel || '',
+        timeSlot: u.timeSlot || '',
+        status: u.status,
+        remark: u.remark || '',
+      });
+    });
+    if (!rows.length) {
+      return Promise.reject(new Error('保存する行がありません（scheduleId が必要です）'));
+    }
+    return upsertParticipations(rows).then(function () {
+      postGasActionFireAndForget({
+        action: 'saveParticipationBulk',
+        memberName: memberName,
+        updates: gasUpdates,
+      });
+      return { ok: true, updated: rows.length };
     });
   }
 

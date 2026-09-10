@@ -1157,36 +1157,67 @@
     });
   }
 
-  function applyParticipantSaveToState(detail) {
-    if (!detail) {
+  function applyParticipantSaveToState(data) {
+    var result = data && data.result;
+    if (!result || !STATE.currentGroupKey) {
       return;
     }
-    if (detail.participants && STATE.currentGroupKey) {
-      STATE.participantsByGroup[STATE.currentGroupKey] = detail.participants;
-      STATE.lastParticipants = detail.participants.slice();
+    var name = result.name;
+    var status = result.status;
+    var statusLabel = result.statusLabel || statusLabelFromCode(status);
+    var remark = result.remark || '';
+    var list = (STATE.participantsByGroup[STATE.currentGroupKey] || []).slice();
+    var found = false;
+    list = list.map(function (p) {
+      if (p.name === name) {
+        found = true;
+        return { name: name, status: status, statusLabel: statusLabel, remark: remark };
+      }
+      return p;
+    });
+    if (!found) {
+      list.push({ name: name, status: status, statusLabel: statusLabel, remark: remark });
     }
-    if (detail.schedule) {
-      var s = detail.schedule;
-      var siblingIds = {};
-      STATE.detailSiblings.forEach(function (row) {
-        siblingIds[row.scheduleId] = true;
+    list.sort(function (a, b) {
+      if (a.status !== b.status) return a.status - b.status;
+      return a.name.localeCompare(b.name, 'ja');
+    });
+    STATE.participantsByGroup[STATE.currentGroupKey] = list;
+    STATE.lastParticipants = list.slice();
+
+    var confirmed = 0;
+    var pending = 0;
+    var absent = 0;
+    list.forEach(function (p) {
+      if (p.status === 1) confirmed++;
+      else if (p.status === 2) pending++;
+      else if (p.status === 3) absent++;
+    });
+    var totalCount = confirmed + pending;
+    var countLabelFn =
+      typeof volleyFormatCountLabel === 'function' ? volleyFormatCountLabel : null;
+    var countLabel = countLabelFn
+      ? countLabelFn(confirmed, pending, absent)
+      : confirmed + pending + '人';
+    var siblingIds = {};
+    STATE.detailSiblings.forEach(function (row) {
+      siblingIds[row.scheduleId] = true;
+    });
+    STATE.schedules = STATE.schedules.map(function (row) {
+      if (!siblingIds[row.scheduleId]) {
+        return row;
+      }
+      return Object.assign({}, row, {
+        confirmed: confirmed,
+        pending: pending,
+        absent: absent,
+        totalCount: totalCount,
+        highAttendance: totalCount >= ATTENDANCE_TIER_HIGH,
+        countLabel: countLabel,
       });
-      STATE.schedules = STATE.schedules.map(function (row) {
-        if (!siblingIds[row.scheduleId] && row.scheduleId !== s.scheduleId) {
-          return row;
-        }
-        return Object.assign({}, row, {
-          confirmed: s.confirmed,
-          pending: s.pending,
-          absent: s.absent,
-          totalCount: s.totalCount,
-          highAttendance: s.highAttendance,
-          countLabel: s.countLabel,
-        });
-      });
-      rebuildScheduleDayIndex();
-      renderCalendars();
-    }
+    });
+    rebuildScheduleDayIndex();
+    renderCalendars();
   }
 
   function onSaveParticipantClick() {

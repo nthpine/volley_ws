@@ -13,6 +13,9 @@ var CONFIG = {
   },
   /** IndexedDB キャッシュ有効期限（ミリ秒） */
   CACHE_TTL_MS: 10 * 60 * 1000,
+  /** Supabase（参加状況の正本） */
+  SUPABASE_URL: 'https://ufwcrdidfwjrqgmtzwci.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_EV8fkuXWDdqKsqzyFKbvPg_Od0XqZAO',
   /** 一括登録 UI・参加状況 API（GAS Web アプリ exec URL） */
   BULK_REGISTER_URL:
     'https://script.google.com/macros/s/AKfycbx9rT2wowTFLXWxLLM_X30s_b1uWE2ukl9S6e-8XFzSdBYhXykzfTluKp5fgERrq99a/exec',

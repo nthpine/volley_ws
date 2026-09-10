@@ -17,6 +17,9 @@ var CONFIG = {
   /** 互換: 旧 config 名 */
   BULK_REGISTER_URL:
     'https://script.google.com/macros/s/AKfycbx9rT2wowTFLXWxLLM_X30s_b1uWE2ukl9S6e-8XFzSdBYhXykzfTluKp5fgERrq99a/exec',
+  /** Supabase（参加状況の正本） */
+  SUPABASE_URL: 'https://ufwcrdidfwjrqgmtzwci.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_EV8fkuXWDdqKsqzyFKbvPg_Od0XqZAO',
   /** 任意: GAS Script Properties の PARTICIPATION_API_SECRET と同じ値 */
   PARTICIPATION_API_TOKEN: '',
   BULK_PAGE_PATH: '/bulk',
