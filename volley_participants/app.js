@@ -1030,6 +1030,9 @@
       ? countLabelFn(confirmed, pending, absent)
       : confirmed + pending + '人';
     var siblingIds = {};
+    if (STATE.currentScheduleId) {
+      siblingIds[STATE.currentScheduleId] = true;
+    }
     STATE.detailSiblings.forEach(function (row) {
       siblingIds[row.scheduleId] = true;
     });

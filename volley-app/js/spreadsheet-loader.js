@@ -160,7 +160,7 @@
   function bundleCacheKey(spreadsheetId) {
     var d = new Date();
     return (
-      'volley_gviz_' +
+      'volley_gviz_v2_' +
       spreadsheetId +
       '_v1_' +
       d.getFullYear() +

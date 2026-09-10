@@ -1,6 +1,6 @@
 /**
  * バレーボール参加管理（Vercel 統合アプリ）設定
- * 読取: Google スプレッドシート gviz CSV / 書込: GAS Web アプリ
+ * 読取: 日程・名前はスプレッドシート、参加状況は Supabase / 書込: Supabase（GAS はバックアップ）
  */
 var CONFIG = {
   SPREADSHEET_ID: '13bYkVraCvuwbf2cCCGhXfAmfVtZ3znbv7fdq-anxovU',
