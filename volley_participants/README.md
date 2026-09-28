@@ -13,7 +13,7 @@
 | 一括登録・変更 | 本番は `/bulk`。レガシーは `config.js` の `BULK_REGISTER_URL`（GAS） |
 | 詳細画面からのステータス変更 | GAS（`doPost` / `action: saveParticipation`） |
 
-**参加状況は Supabase（`volley_participations`）が正本です。** 誰かが保存すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。スプレッドシートの `participants` シートは非同期バックアップ用です。
+**参加状況は Supabase（`volley_participations`）が正本です。** カレンダー上の表示は **日付（YYYY-MM-DD）と時間帯** で日程グループに紐づけます（`schedule_id` が DB に無くても、シート上の同じ日付・時間帯に合えば表示）。誰かが保存すると、次にページを開く／「更新」を押したタイミングで最新が表示されます。スプレッドシートの `participants` シートは非同期バックアップ用です。
 
 ---
 

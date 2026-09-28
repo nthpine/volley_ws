@@ -308,6 +308,7 @@
         escapeHtml(row.remark || '') +
         '" placeholder="任意" enterkeyhint="done" /></td>';
       tr.dataset.dateLabel = row.dateLabel || '';
+      tr.dataset.dateIso = row.dateIso || '';
       tr.dataset.timeSlot = row.timeSlot || '';
       tr.dataset.scheduleId = row.primaryScheduleId || '';
       tbody.appendChild(tr);
@@ -337,6 +338,7 @@
       }
       updates.push({
         scheduleId: tr.dataset.scheduleId || (original && original.primaryScheduleId) || '',
+        eventDate: tr.dataset.dateIso || (original && original.dateIso) || '',
         dateLabel: tr.dataset.dateLabel || '',
         timeSlot: tr.dataset.timeSlot || '',
         status: newStatus,

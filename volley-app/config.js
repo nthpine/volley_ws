@@ -1,6 +1,6 @@
 /**
  * バレーボール参加管理（Vercel 統合アプリ）設定
- * 読取: 日程・名前はスプレッドシート、参加状況は Supabase / 書込: Supabase（GAS はバックアップ）
+ * 読取: 日程・名前はスプレッドシート、参加状況は Supabase（日付+時間帯で紐づけ） / 書込: Supabase（GAS はバックアップ）
  */
 var CONFIG = {
   SPREADSHEET_ID: '13bYkVraCvuwbf2cCCGhXfAmfVtZ3znbv7fdq-anxovU',
@@ -17,7 +17,7 @@ var CONFIG = {
   /** 互換: 旧 config 名 */
   BULK_REGISTER_URL:
     'https://script.google.com/macros/s/AKfycbx9rT2wowTFLXWxLLM_X30s_b1uWE2ukl9S6e-8XFzSdBYhXykzfTluKp5fgERrq99a/exec',
-  /** Supabase（参加状況の正本） */
+  /** Supabase（参加状況の正本。event_date + time_slot で一意、schedule_id も保存） */
   SUPABASE_URL: 'https://ufwcrdidfwjrqgmtzwci.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_EV8fkuXWDdqKsqzyFKbvPg_Od0XqZAO',
   /** 任意: GAS Script Properties の PARTICIPATION_API_SECRET と同じ値 */

@@ -13,7 +13,7 @@ var CONFIG = {
   },
   /** IndexedDB キャッシュ有効期限（ミリ秒） */
   CACHE_TTL_MS: 10 * 60 * 1000,
-  /** Supabase（参加状況の正本） */
+  /** Supabase（参加状況の正本。event_date + time_slot で一意、schedule_id も保存） */
   SUPABASE_URL: 'https://ufwcrdidfwjrqgmtzwci.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_EV8fkuXWDdqKsqzyFKbvPg_Od0XqZAO',
   /** 一括登録 UI・参加状況 API（GAS Web アプリ exec URL） */

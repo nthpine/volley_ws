@@ -40,7 +40,7 @@
     var sb = getSupabaseConfig();
     var url =
       sb.url +
-      '/rest/v1/volley_participations?select=schedule_id,name,status,remark,updated_at&limit=5000';
+      '/rest/v1/volley_participations?select=event_date,time_slot,schedule_id,name,status,remark,updated_at&limit=5000';
     var res = await fetch(url, {
       cache: 'no-store',
       headers: {
@@ -573,12 +573,40 @@
     return result;
   }
 
-  function buildParticipantsByTimeGroupFromDb(participations, sidToGroup) {
+  function buildDateTimeSlotToGroupKeyMapFromRows(schedRows, schedHeaders, rangeStart, rangeEnd) {
+    var map = {};
+    if (!schedRows || schedRows.length < 2 || !schedHeaders || !schedHeaders.length) {
+      return map;
+    }
+    var idxDate = schedHeaders.indexOf('日付');
+    var idxTime = schedHeaders.indexOf('時間帯');
+    if (idxDate === -1 || idxTime === -1) return map;
+    for (var i = 1; i < schedRows.length; i++) {
+      var row = schedRows[i];
+      if (isScheduleRowHidden(row, schedHeaders)) continue;
+      var dateLabel = String(row[idxDate] || '').trim();
+      var timeSlot = String(row[idxTime] || '').trim();
+      if (!dateLabel || !timeSlot) continue;
+      var eventDate = parseScheduleDateInRange(dateLabel, rangeStart, rangeEnd);
+      if (!eventDate) continue;
+      var lookupKey =
+        formatDateIso(eventDate) + '\x1f' + normalizeTimeSlotForKey(timeSlot);
+      if (!map[lookupKey]) {
+        map[lookupKey] = scheduleTimeGroupKey(dateLabel, timeSlot);
+      }
+    }
+    return map;
+  }
+
+  function buildParticipantsByTimeGroupFromDb(participations, dateTimeSlotToGroupKey) {
     var byGroupName = {};
     (participations || []).forEach(function (row) {
-      var sid = canonicalScheduleId(row.schedule_id);
-      if (!sid || !sidToGroup[sid]) return;
-      var gKey = sidToGroup[sid].groupKey;
+      var eventDate = String(row.event_date || '').slice(0, 10);
+      var slotKey = normalizeTimeSlotForKey(row.time_slot);
+      if (!eventDate || !slotKey) return;
+      var lookupKey = eventDate + '\x1f' + slotKey;
+      var gKey = dateTimeSlotToGroupKey[lookupKey];
+      if (!gKey) return;
       var pName = String(row.name || '').trim();
       if (!pName) return;
       var st = parseInt(String(row.status).trim(), 10);
@@ -766,10 +794,15 @@
     var configMap = buildConfigMap(sheetData.config);
     var schedRows = sheetData.schedules;
     var schedHeaders = schedRows.length > 0 ? schedRows[0] : [];
-    var sidToGroup = buildScheduleIdToTimeGroupMapFromRows(schedRows, schedHeaders);
+    var dateTimeSlotToGroupKey = buildDateTimeSlotToGroupKeyMapFromRows(
+      schedRows,
+      schedHeaders,
+      range.start,
+      range.end
+    );
     var participantsByGroup = buildParticipantsByTimeGroupFromDb(
       participations,
-      sidToGroup
+      dateTimeSlotToGroupKey
     );
     var countsByTimeGroup = buildParticipantCountsByTimeGroupFromDb(participantsByGroup);
     var schedules = loadSchedulesInRange(

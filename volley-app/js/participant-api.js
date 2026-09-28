@@ -40,6 +40,18 @@
     return STATUS_LABEL[status] || String(status);
   }
 
+  function normalizeTimeSlotForKey(timeSlot) {
+    return String(timeSlot || '')
+      .trim()
+      .replace(/[～—－〜]/g, '-')
+      .replace(/\s+/g, '')
+      .replace(/-+/g, '-');
+  }
+
+  function isValidEventDateIso(value) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+  }
+
   function postGasAction(payload) {
     var url = getParticipationApiUrl();
     if (!url) {
@@ -92,7 +104,7 @@
     var sb = getSupabaseConfig();
     var url =
       sb.url +
-      '/rest/v1/volley_participations?on_conflict=schedule_id,name';
+      '/rest/v1/volley_participations?on_conflict=event_date,time_slot,name';
     return fetch(url, {
       method: 'POST',
       headers: Object.assign({}, supabaseHeaders(sb.key), {
@@ -113,11 +125,30 @@
    * @param {string} name
    * @param {number} status 1=○ 2=△ 3=✕
    * @param {string} remark
+   * @param {string} eventDate YYYY-MM-DD
+   * @param {string} timeSlot
    */
-  function saveParticipationRemote(scheduleId, name, status, remark) {
+  function saveParticipationRemote(scheduleId, name, status, remark, eventDate, timeSlot) {
+    var sid = String(scheduleId || '').trim();
+    if (!sid) {
+      return Promise.reject(new Error('スケジュール ID が必要です'));
+    }
+    var dateIso = String(eventDate || '').trim();
+    var slotNorm = normalizeTimeSlotForKey(timeSlot);
+    if (!dateIso && !slotNorm) {
+      return Promise.reject(new Error('日付と時間帯が必要です'));
+    }
+    if (!isValidEventDateIso(dateIso)) {
+      return Promise.reject(new Error('日付の形式が不正です（YYYY-MM-DD）'));
+    }
+    if (!slotNorm) {
+      return Promise.reject(new Error('時間帯が必要です'));
+    }
     var now = new Date().toISOString();
     var row = {
-      schedule_id: scheduleId,
+      event_date: dateIso,
+      time_slot: slotNorm,
+      schedule_id: sid,
       name: name,
       status: status,
       remark: remark || '',
@@ -144,7 +175,7 @@
 
   /**
    * @param {string} memberName
-   * @param {Array.<{scheduleId?: string, dateLabel: string, timeSlot: string, status: number, remark?: string}>} updates
+   * @param {Array.<{scheduleId?: string, eventDate: string, dateLabel: string, timeSlot: string, status: number, remark?: string}>} updates
    */
   function saveParticipationBulkRemote(memberName, updates) {
     var now = new Date().toISOString();
@@ -152,10 +183,14 @@
     var gasUpdates = [];
     (updates || []).forEach(function (u) {
       var sid = String(u.scheduleId || '').trim();
-      if (!sid) {
+      var dateIso = String(u.eventDate || '').trim();
+      var slotNorm = normalizeTimeSlotForKey(u.timeSlot);
+      if (!sid || !isValidEventDateIso(dateIso) || !slotNorm) {
         return;
       }
       rows.push({
+        event_date: dateIso,
+        time_slot: slotNorm,
         schedule_id: sid,
         name: memberName,
         status: u.status,
@@ -171,7 +206,9 @@
       });
     });
     if (!rows.length) {
-      return Promise.reject(new Error('保存する行がありません（scheduleId が必要です）'));
+      return Promise.reject(
+        new Error('保存する行がありません（日付・時間帯・scheduleId が必要です）')
+      );
     }
     return upsertParticipations(rows).then(function () {
       postGasActionFireAndForget({

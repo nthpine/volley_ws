@@ -1082,7 +1082,19 @@
       return;
     }
 
-    saveFn(STATE.currentScheduleId, memberName, status, remark)
+    var saveSchedule = STATE.schedules.find(function (s) {
+      return s.scheduleId === STATE.currentScheduleId;
+    });
+    var saveEventDate = saveSchedule ? String(saveSchedule.dateIso || '') : '';
+    var saveTimeSlot = saveSchedule ? String(saveSchedule.timeSlot || '') : '';
+    saveFn(
+      STATE.currentScheduleId,
+      memberName,
+      status,
+      remark,
+      saveEventDate,
+      saveTimeSlot
+    )
       .then(function (data) {
         btn.disabled = false;
         applyParticipantSaveToState(data);
