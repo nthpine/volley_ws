@@ -744,13 +744,12 @@
   }
 
   /**
-   * 人数ゲージ（12 マス、1 マス = 1 人）の塗り量と、現在人数のマスの色を要素に設定する。
-   * 12 人以上は満タン。色は styles.css の --g0〜--g12。
+   * 人数ゲージ（12 マス、1 マス = 1 人）の塗り量を要素に設定する。
+   * 12 人以上は満タン。マスの色は styles.css の --g1〜--g12。
    */
   function applyGaugeStyle(el, activeCount) {
     var n = Math.max(0, Math.min(Number(activeCount) || 0, GAUGE_SEGMENTS));
     el.style.setProperty('--n', String(n));
-    el.style.setProperty('--tier', 'var(--g' + n + ')');
   }
 
   function getAttendanceTierClass(activeCount) {

@@ -56,6 +56,12 @@
 
 * { box-sizing: border-box; }
 
+/* スマホで下に引っ張ったときのブラウザ標準の再読み込みを無効にする（更新は「更新」ボタンで行う） */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -332,7 +338,6 @@ main {
 
 /* 練習チップ。人数は数字と下端のゲージ（8人 = 開催見込み高）で読む */
 .event-chip {
-  --tier: var(--g0);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -372,7 +377,7 @@ main {
 }
 
 /* 参加人数ゲージ: 12 分割、1 マス = 1 人。3 人ごとに色が変わる。
-   --n は calendar-app.js が 0〜12 で設定する。--tier は現在人数のマスの色（数字バッジに使う） */
+   --n は calendar-app.js が 0〜12 で設定する。人数の数字は色を付けず黒のまま */
 .event-chip::after,
 #modalCount::after {
   content: "";
@@ -427,10 +432,8 @@ main {
   align-self: start;
   display: block;
   margin: 0;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: var(--tier);
-  font-size: 1rem;
+  padding: 0;
+  font-size: 1.05rem;
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -642,8 +645,7 @@ input.name-locked {
 
   .event-chip .chip-bg-count {
     justify-self: start;
-    padding: 2px 6px;
-    font-size: 0.9rem;
+    font-size: 0.98rem;
   }
 
   .event-chip .chip-location {
