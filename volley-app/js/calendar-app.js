@@ -19,6 +19,7 @@
   var WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
   var ATTENDANCE_TIER_HIGH = 8;
   var ATTENDANCE_TIER_MID = 5;
+  var GAUGE_SEGMENTS = 12;
   var CALENDAR_CACHE_KEY = 'volley_calendar_pages_v1';
   var CALENDAR_CACHE_MAX_BYTES = 4 * 1024 * 1024;
   var TODAY_MS = 0;
@@ -249,8 +250,9 @@
     if (data.range) {
       var startLabel = formatYearMonth(data.range.startYear, data.range.startMonth);
       var endLabel = formatYearMonth(data.range.endYear, data.range.endMonth);
+      // 1か月表示のときは月カードの見出しと重複するため、操作の案内を出す
       document.getElementById('periodLabel').textContent =
-        startLabel === endLabel ? startLabel : startLabel + ' 〜 ' + endLabel;
+        startLabel === endLabel ? '練習をタップして参加を登録' : startLabel + ' 〜 ' + endLabel;
     } else {
       document.getElementById('periodLabel').textContent = '参加カレンダー';
     }
@@ -480,10 +482,6 @@
       .replace(/～/g, '-')
       .replace(/—/g, '-')
       .replace(/－/g, '-');
-    var dash = t.indexOf('-');
-    if (dash > 0) {
-      return escapeHtml(t.slice(0, dash)) + '<br>' + escapeHtml(t.slice(dash));
-    }
     return escapeHtml(t);
   }
 
@@ -730,6 +728,7 @@
       num.classList.add('sat');
     }
     num.textContent = day;
+    num.setAttribute('data-dow', WEEKDAYS[dow]);
     cell.appendChild(num);
 
     if (!isOther && year === cardYear && month === cardMonth) {
@@ -742,6 +741,16 @@
     }
 
     return cell;
+  }
+
+  /**
+   * 人数ゲージ（12 マス、1 マス = 1 人）の塗り量と、現在人数のマスの色を要素に設定する。
+   * 12 人以上は満タン。色は styles.css の --g0〜--g12。
+   */
+  function applyGaugeStyle(el, activeCount) {
+    var n = Math.max(0, Math.min(Number(activeCount) || 0, GAUGE_SEGMENTS));
+    el.style.setProperty('--n', String(n));
+    el.style.setProperty('--tier', 'var(--g' + n + ')');
   }
 
   function getAttendanceTierClass(activeCount) {
@@ -819,6 +828,7 @@
     btn.dataset.dateIso = primary ? String(primary.dateIso || '') : '';
     btn.dataset.timeSlot = timeSlot;
     btn.setAttribute('data-bg-count', String(activeCount));
+    applyGaugeStyle(btn, activeCount);
     btn.setAttribute(
       'aria-label',
       [
@@ -830,6 +840,7 @@
           })
           .filter(Boolean)
           .join(' '),
+        '参加' + activeCount + '人',
       ]
         .filter(Boolean)
         .join(' ')
@@ -973,6 +984,8 @@
     modalCountEl.textContent = countText;
     modalCountEl.style.whiteSpace = 'pre-line';
     modalCountEl.classList.toggle('modal-count--hot', active >= ATTENDANCE_TIER_HIGH);
+    // カレンダーのチップと同じ 12 分割ゲージ
+    applyGaugeStyle(modalCountEl, active);
 
     var key = exportTimeGroupKey(schedule);
     STATE.currentGroupKey = key;
