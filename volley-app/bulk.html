@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=16" />
+  <link rel="stylesheet" href="styles.css?v=17" />
 </head>
 <body>
   <header>
@@ -16,10 +16,8 @@
       <div class="header-actions">
         <a class="header-link-btn" id="calendarLink" href="/">カレンダーへ戻る</a>
         <button type="button" class="refresh-btn" id="refreshBulkBtn" title="最新データを再取得">更新</button>
-        <div id="refreshSpinner" class="header-refresh-spinner" style="display:none;" aria-hidden="true"></div>
       </div>
     </div>
-    <p>名前を1人選び、当月・来月の日程に ○△✕ を付けて一括保存できます。</p>
   </header>
 
   <main>
@@ -47,10 +45,6 @@
         </div>
       </details>
 
-      <div class="bulk-view-hint-only" id="bulkViewHint">
-        体育館の予約が確定している日程を表示します。
-      </div>
-
       <div class="bulk-toolbar">
         <div class="bulk-field">
           <label for="bulkMemberSelect">名前</label>
@@ -60,7 +54,6 @@
         </div>
       </div>
 
-      <p id="bulkTableHint" class="bulk-block-hint">名前を選ぶと日程テーブルが表示されます。</p>
       <p id="bulkTableEmpty" class="bulk-block-empty" style="display:none;">表示できる日程がありません。</p>
       <div id="bulkTableLoading" class="bulk-block-loading" style="display:none;" aria-hidden="true">
         <div class="loading-spinner loading-spinner--sm" aria-hidden="true"></div>
@@ -89,6 +82,6 @@
   <script src="config.js"></script>
   <script src="js/participant-api.js"></script>
   <script src="js/spreadsheet-loader.js"></script>
-  <script src="js/bulk-app.js"></script>
+  <script src="js/bulk-app.js?v=2"></script>
 </body>
 </html>

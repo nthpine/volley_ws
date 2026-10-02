@@ -53,9 +53,7 @@
 
   function setRefreshBusy(busy) {
     var btn = document.getElementById('refreshBulkBtn');
-    var spinner = document.getElementById('refreshSpinner');
     if (btn) btn.disabled = !!busy;
-    if (spinner) spinner.style.display = busy ? 'block' : 'none';
   }
 
   function showError(msg) {
@@ -239,21 +237,18 @@
 
   function rebuildTable() {
     var memberName = document.getElementById('bulkMemberSelect').value.trim();
-    var hint = document.getElementById('bulkTableHint');
     var empty = document.getElementById('bulkTableEmpty');
     var wrap = document.getElementById('bulkTableWrap');
     var tbody = document.getElementById('bulkTableBody');
 
     if (!memberName) {
       STATE.bulkRows = [];
-      hint.style.display = 'block';
       empty.style.display = 'none';
       wrap.style.display = 'none';
       tbody.innerHTML = '';
       return;
     }
 
-    hint.style.display = 'none';
     STATE.bulkRows = buildConfirmedRows(memberName);
 
     if (!STATE.bulkRows.length) {
