@@ -247,14 +247,20 @@
     STATE.generatedAt = data.generatedAt || null;
     rebuildScheduleDayIndex();
 
+    var periodEl = document.getElementById('periodLabel');
     if (data.range) {
       var startLabel = formatYearMonth(data.range.startYear, data.range.startMonth);
       var endLabel = formatYearMonth(data.range.endYear, data.range.endMonth);
-      // 1か月表示のときは月カードの見出しと重複するため、操作の案内を出す
-      document.getElementById('periodLabel').textContent =
-        startLabel === endLabel ? '練習をタップして参加を登録' : startLabel + ' 〜 ' + endLabel;
+      if (startLabel !== endLabel) {
+        periodEl.textContent = startLabel + ' 〜 ' + endLabel;
+        periodEl.hidden = false;
+      } else {
+        periodEl.textContent = '';
+        periodEl.hidden = true;
+      }
     } else {
-      document.getElementById('periodLabel').textContent = '参加カレンダー';
+      periodEl.textContent = '';
+      periodEl.hidden = true;
     }
 
     var errorArea = document.getElementById('errorArea');
@@ -303,9 +309,7 @@
 
   function setRefreshLoading(show) {
     var btn = document.getElementById('refreshCalendarBtn');
-    var spinner = document.getElementById('refreshSpinner');
-    btn.disabled = !!show;
-    spinner.style.display = show ? 'block' : 'none';
+    if (btn) btn.disabled = !!show;
   }
 
   function onRefreshError(err) {
@@ -1159,7 +1163,6 @@
         '</span>' +
         remarkHtml +
         '</div>' +
-        '<span class="edit-hint">変更</span>' +
         '<span class="badge ' +
         badgeClass +
         '">' +

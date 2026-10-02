@@ -156,16 +156,6 @@ header h1::before {
   cursor: not-allowed;
 }
 
-.header-refresh-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(79, 70, 229, 0.18);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.75s linear infinite;
-  flex-shrink: 0;
-}
-
 header p {
   margin: 0.35rem 0 0;
   font-size: 0.82rem;
@@ -1050,19 +1040,6 @@ input.name-locked {
 
 .participant-list li:last-child { border-bottom: none; }
 
-.participant-list .edit-hint {
-  flex-shrink: 0;
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: var(--muted);
-  opacity: 0.85;
-}
-
-.participant-list li.selected .edit-hint {
-  color: var(--primary-dim);
-  opacity: 1;
-}
-
 .edit-target-name {
   margin: 0 0 0.75rem;
   font-size: 1rem;
@@ -1090,12 +1067,6 @@ input.name-locked {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.form-hint {
-  font-size: 0.8rem;
-  color: var(--muted);
-  margin: -0.5rem 0 0.75rem;
 }
 
 .badge {
@@ -1140,10 +1111,6 @@ input.name-locked {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--border);
-}
-
-#participantRegisterSection .form-hint {
-  margin-top: -0.35rem;
 }
 
 label {
@@ -1379,14 +1346,6 @@ textarea {
   margin-top: 0.75rem;
 }
 
-.bulk-view-hint-only {
-  margin: 0 0 1rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
 .bulk-view-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1487,7 +1446,6 @@ textarea {
   cursor: not-allowed;
 }
 
-.bulk-block-hint,
 .bulk-block-empty {
   color: var(--muted);
   font-size: 0.9rem;
@@ -1723,7 +1681,6 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 
-  .header-refresh-spinner,
   .loading-spinner,
   .loading-spinner--sm,
   .submit-btn.is-loading .loading-spinner {

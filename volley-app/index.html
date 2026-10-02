@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=16" />
+  <link rel="stylesheet" href="styles.css?v=17" />
 </head>
 <body>
   <header>
@@ -16,10 +16,9 @@
       <div class="header-actions">
         <a class="header-link-btn" id="bulkRegisterLink" href="/bulk">一括登録</a>
         <button type="button" class="refresh-btn" id="refreshCalendarBtn" title="最新データを再取得">更新</button>
-        <div id="refreshSpinner" class="header-refresh-spinner" style="display:none;" aria-hidden="true"></div>
       </div>
     </div>
-    <p id="periodLabel">読み込み中…</p>
+    <p id="periodLabel" hidden></p>
   </header>
 
   <main>
@@ -50,14 +49,10 @@
       <div class="modal-body">
         <p id="modalCount" style="font-weight:600;margin-top:0;"></p>
         <h3 style="font-size:0.95rem;margin:0 0 0.25rem;">参加者一覧</h3>
-        <p class="form-hint" style="margin-top:0;margin-bottom:0.5rem;color:var(--muted);font-size:0.85rem;">
-          下のフォームから参加状況を登録・変更できます
-        </p>
         <ul id="participantList" class="participant-list"></ul>
         <p id="emptyParticipants" class="empty-participants" style="display:none;">まだ登録がありません</p>
         <section id="participantRegisterSection" class="form-section">
           <h3>参加登録</h3>
-          <p class="form-hint">一覧の名前をタップするとフォームに反映されます</p>
           <label for="participantMemberSelect">名前</label>
           <select id="participantMemberSelect">
             <option value="">選択してください</option>
@@ -88,6 +83,6 @@
   <script src="config.js"></script>
   <script src="js/participant-api.js"></script>
   <script src="js/spreadsheet-loader.js"></script>
-  <script src="js/calendar-app.js?v=8"></script>
+  <script src="js/calendar-app.js?v=9"></script>
 </body>
 </html>
