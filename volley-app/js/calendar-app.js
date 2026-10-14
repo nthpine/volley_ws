@@ -27,6 +27,8 @@
   var MAP_URL_CITY_PREFIX = '札幌市立';
   /** モーダル直後の誤タップで参加者行が選択されるのを防ぐ */
   var PARTICIPANT_SELECT_IGNORE_UNTIL = 0;
+  var bodyScrollLockY = 0;
+  var isBodyScrollLocked = false;
 
   function bindUiEvents() {
     document.getElementById('closeModalBtn').addEventListener('click', closeModal);
@@ -44,6 +46,10 @@
     document.getElementById('participantList').addEventListener('click', onParticipantListClick);
     document.getElementById('saveParticipantBtn').addEventListener('click', onSaveParticipantClick);
     document.getElementById('participantMemberSelect').addEventListener('change', onMemberSelectChange);
+    window.addEventListener('resize', syncModalMaxHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncModalMaxHeight);
+    }
   }
 
   function bootApp() {
@@ -933,7 +939,9 @@
 
     document.getElementById('modalOverlay').classList.add('open');
     document.getElementById('modalOverlay').setAttribute('aria-hidden', 'false');
+    lockBodyScroll();
     renderDetailFromSnapshot(local);
+    resetModalBodyScroll();
   }
 
   function getDetailTimeSlot(schedules) {
@@ -1122,10 +1130,7 @@
     prefillParticipantForm(participant);
     renderParticipantList(STATE.lastParticipants);
     setModalFormMessage('', '');
-    document.getElementById('participantRegisterSection').scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-    });
+    scrollModalBodyToRegisterSection();
   }
 
   function renderParticipantList(participants) {
@@ -1257,6 +1262,7 @@
     var remark = document.getElementById('editRemark').value.trim();
     var btn = document.getElementById('saveParticipantBtn');
     btn.disabled = true;
+    blurActiveElement();
     setModalFormMessage('保存中…', '');
 
     var saveFn =
@@ -1303,6 +1309,7 @@
             '」で登録しました。',
           'ok'
         );
+        blurActiveElement();
       })
       .catch(function (err) {
         btn.disabled = false;
@@ -1311,6 +1318,7 @@
   }
 
   function closeModal() {
+    blurActiveElement();
     document.getElementById('modalOverlay').classList.remove('open');
     document.getElementById('modalOverlay').setAttribute('aria-hidden', 'true');
     STATE.currentScheduleId = null;
@@ -1319,6 +1327,98 @@
     STATE.currentGroupKey = '';
     resetParticipantForm();
     hideOrgDetailPanel();
+    resetModalBodyScroll();
+    unlockBodyScroll();
+  }
+
+  function getModalBodyEl() {
+    return document.getElementById('modalBody');
+  }
+
+  function resetModalBodyScroll() {
+    var scroller = getModalBodyEl();
+    if (scroller) {
+      scroller.scrollTop = 0;
+    }
+  }
+
+  function scrollModalBodyToRegisterSection() {
+    var section = document.getElementById('participantRegisterSection');
+    var scroller = getModalBodyEl();
+    if (!section || !scroller) {
+      return;
+    }
+    var nextTop =
+      scroller.scrollTop +
+      section.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top -
+      8;
+    if (typeof scroller.scrollTo === 'function') {
+      scroller.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+    } else {
+      scroller.scrollTop = Math.max(0, nextTop);
+    }
+  }
+
+  function blurActiveElement() {
+    var el = document.activeElement;
+    if (el && el !== document.body && typeof el.blur === 'function') {
+      el.blur();
+    }
+  }
+
+  function lockBodyScroll() {
+    if (isBodyScrollLocked) {
+      return;
+    }
+    bodyScrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+    isBodyScrollLocked = true;
+    document.body.style.top = '-' + bodyScrollLockY + 'px';
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
+    syncModalMaxHeight();
+  }
+
+  function unlockBodyScroll() {
+    if (!isBodyScrollLocked) {
+      return;
+    }
+    isBodyScrollLocked = false;
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    clearModalMaxHeight();
+    if (typeof window.scrollTo === 'function') {
+      window.scrollTo(0, bodyScrollLockY);
+    } else {
+      document.documentElement.scrollTop = bodyScrollLockY;
+    }
+  }
+
+  function getViewportHeight() {
+    if (window.visualViewport && window.visualViewport.height) {
+      return window.visualViewport.height;
+    }
+    return window.innerHeight || document.documentElement.clientHeight || 0;
+  }
+
+  function syncModalMaxHeight() {
+    var modal = document.querySelector('#modalOverlay .modal');
+    if (!modal || !document.getElementById('modalOverlay').classList.contains('open')) {
+      return;
+    }
+    var height = getViewportHeight();
+    if (!height) {
+      return;
+    }
+    modal.style.maxHeight = Math.round(height * 0.92) + 'px';
+  }
+
+  function clearModalMaxHeight() {
+    var modal = document.querySelector('#modalOverlay .modal');
+    if (modal) {
+      modal.style.maxHeight = '';
+    }
   }
 
   function hideOrgDetailPanel() {
