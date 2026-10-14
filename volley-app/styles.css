@@ -714,6 +714,19 @@ input.name-locked {
   padding-left: 0.75rem;
 }
 
+html.modal-open,
+html.modal-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.modal-open {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
+}
+
 .modal-overlay {
   display: none;
   position: fixed;
@@ -723,6 +736,8 @@ input.name-locked {
   align-items: flex-end;
   justify-content: center;
   padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .modal-overlay.open {
@@ -738,11 +753,14 @@ input.name-locked {
 
 .modal {
   position: relative;
+  display: flex;
+  flex-direction: column;
   background: var(--card);
   width: 100%;
   max-width: 520px;
   max-height: 92vh;
-  overflow-y: auto;
+  max-height: 92dvh;
+  overflow: hidden;
   border-radius: 24px 24px 0 0;
   border: 2px solid var(--border);
   box-shadow: 0 12px 40px rgba(30, 27, 75, 0.2);
@@ -755,8 +773,8 @@ input.name-locked {
 .modal-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
+  position: relative;
+  flex-shrink: 0;
   background: var(--card);
   z-index: 2;
 }
@@ -902,6 +920,7 @@ input.name-locked {
 }
 
 .close-btn {
+  flex-shrink: 0;
   border: 1px solid var(--border);
   background: var(--card);
   width: 40px;
@@ -921,7 +940,13 @@ input.name-locked {
 }
 
 .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 1rem 1.25rem 1.5rem;
+  touch-action: pan-y;
 }
 
 .modal-count--hot {
