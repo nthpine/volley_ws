@@ -2,6 +2,7 @@
   'use strict';
 
   var STATE = {
+    sourceSchedules: [],
     schedules: [],
     schedulesByDay: {},
     members: [],
@@ -14,6 +15,7 @@
     selectedParticipantName: null,
     lastParticipants: [],
     generatedAt: null,
+    showUndecided: true,
   };
 
   var WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -46,6 +48,11 @@
     document.getElementById('participantList').addEventListener('click', onParticipantListClick);
     document.getElementById('saveParticipantBtn').addEventListener('click', onSaveParticipantClick);
     document.getElementById('participantMemberSelect').addEventListener('change', onMemberSelectChange);
+    var undecidedToggle = document.getElementById('showUndecidedToggle');
+    if (undecidedToggle) {
+      undecidedToggle.checked = readShowUndecidedPref();
+      undecidedToggle.addEventListener('change', onShowUndecidedToggle);
+    }
     window.addEventListener('resize', syncModalMaxHeight);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', syncModalMaxHeight);
@@ -242,16 +249,85 @@
       });
   }
 
+  function readShowUndecidedPref() {
+    if (typeof volleyReadShowUndecidedPref === 'function') {
+      return volleyReadShowUndecidedPref();
+    }
+    return true;
+  }
+
+  function writeShowUndecidedPref(show) {
+    if (typeof volleyWriteShowUndecidedPref === 'function') {
+      volleyWriteShowUndecidedPref(show);
+    }
+  }
+
+  function isUndecidedLocation(location) {
+    if (typeof volleyIsUndecidedLocation === 'function') {
+      return volleyIsUndecidedLocation(location);
+    }
+    return !String(location || '').trim();
+  }
+
+  function isUndecidedSchedule(schedule) {
+    if (typeof volleyIsUndecidedSchedule === 'function') {
+      return volleyIsUndecidedSchedule(schedule);
+    }
+    return !!(schedule && (schedule.isTentative || isUndecidedLocation(schedule.location)));
+  }
+
+  function undecidedLocationLabel() {
+    return typeof volleyUndecidedLocationLabel === 'string'
+      ? volleyUndecidedLocationLabel
+      : '場所未定';
+  }
+
+  function rebuildVisibleSchedules() {
+    var source = STATE.sourceSchedules || [];
+    if (typeof volleyMergeSchedulesWithTentative === 'function') {
+      STATE.schedules = volleyMergeSchedulesWithTentative(
+        source,
+        STATE.range,
+        STATE.participantsByGroup,
+        STATE.showUndecided
+      );
+    } else if (STATE.showUndecided) {
+      STATE.schedules = source.slice();
+    } else {
+      STATE.schedules = source.filter(function (s) {
+        return !isUndecidedSchedule(s);
+      });
+    }
+    rebuildScheduleDayIndex();
+  }
+
+  function syncUndecidedToggleUi() {
+    var toggle = document.getElementById('showUndecidedToggle');
+    if (toggle) {
+      toggle.checked = !!STATE.showUndecided;
+    }
+  }
+
+  function onShowUndecidedToggle(e) {
+    STATE.showUndecided = !!(e && e.target && e.target.checked);
+    writeShowUndecidedPref(STATE.showUndecided);
+    rebuildVisibleSchedules();
+    renderCalendars();
+    refreshModalIfOpen();
+  }
+
   function applyCalendarData(data, options) {
     options = options || {};
     data = data || {};
-    STATE.schedules = data.schedules || [];
+    STATE.sourceSchedules = data.schedules || [];
     STATE.members = data.members || [];
     STATE.range = data.range;
     STATE.participantsByGroup = data.participantsByGroup || {};
     STATE.orgById = data.orgById || {};
     STATE.generatedAt = data.generatedAt || null;
-    rebuildScheduleDayIndex();
+    STATE.showUndecided = readShowUndecidedPref();
+    syncUndecidedToggleUi();
+    rebuildVisibleSchedules();
 
     var periodEl = document.getElementById('periodLabel');
     if (data.range) {
@@ -293,6 +369,7 @@
       return s.scheduleId === STATE.currentScheduleId;
     });
     if (!local) {
+      closeModal();
       return;
     }
     STATE.detailSiblings = getSchedulesInSameTimeGroup(local);
@@ -371,6 +448,9 @@
   }
 
   function formatLocationMapLinkHtml(place) {
+    if (isUndecidedLocation(place)) {
+      return escapeHtml(undecidedLocationLabel());
+    }
     var displayText = String(place || '').trim() || '—';
     var mapUrl = buildFallbackMapUrl(place);
     if (mapUrl) {
@@ -794,12 +874,12 @@
     locs.sort(function (a, b) {
       return a.localeCompare(b, 'ja');
     });
-    if (!locs.length) {
+    if (!locs.length || locs.every(isUndecidedLocation)) {
       return (
         '<span class="chip-loc-line">' +
         locationPinSvgHtml() +
         '<span class="chip-loc-text">' +
-        escapeHtml('（場所未設定）') +
+        escapeHtml(undecidedLocationLabel()) +
         '</span></span>'
       );
     }
@@ -832,6 +912,9 @@
     btn.type = 'button';
     var activeCount = (agg.confirmed || 0) + (agg.pending || 0);
     btn.className = 'event-chip ' + getAttendanceTierClass(activeCount);
+    if (displaySchedules.every(isUndecidedSchedule)) {
+      btn.classList.add('event-chip--tentative');
+    }
     var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
     btn.dataset.scheduleId = primary ? String(primary.scheduleId || '') : '';
     btn.dataset.dateIso = primary ? String(primary.dateIso || '') : '';
@@ -845,7 +928,8 @@
         timeSlot,
         sorted
           .map(function (s) {
-            return String(s.location || '').trim();
+            var loc = String(s.location || '').trim();
+            return loc && !isUndecidedLocation(loc) ? loc : undecidedLocationLabel();
           })
           .filter(Boolean)
           .join(' '),
@@ -1219,15 +1303,9 @@
     var countLabel = countLabelFn
       ? countLabelFn(confirmed, pending, absent)
       : confirmed + pending + '人';
-    var siblingIds = {};
-    if (STATE.currentScheduleId) {
-      siblingIds[STATE.currentScheduleId] = true;
-    }
-    STATE.detailSiblings.forEach(function (row) {
-      siblingIds[row.scheduleId] = true;
-    });
-    STATE.schedules = STATE.schedules.map(function (row) {
-      if (!siblingIds[row.scheduleId]) {
+    var groupKey = STATE.currentGroupKey;
+    function withUpdatedCounts(row) {
+      if (!groupKey || exportTimeGroupKey(row) !== groupKey) {
         return row;
       }
       return Object.assign({}, row, {
@@ -1238,8 +1316,12 @@
         highAttendance: totalCount >= ATTENDANCE_TIER_HIGH,
         countLabel: countLabel,
       });
-    });
-    rebuildScheduleDayIndex();
+    }
+    STATE.sourceSchedules = (STATE.sourceSchedules || []).map(withUpdatedCounts);
+    rebuildVisibleSchedules();
+    if (STATE.currentScheduleId) {
+      STATE.detailSiblings = getSchedulesInSameTimeGroup(STATE.currentScheduleId);
+    }
     renderCalendars();
   }
 

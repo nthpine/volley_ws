@@ -11,6 +11,9 @@
   var PARTICIPANT_INPUT_AT_COL = 6;
   var BUNDLE_IDB_NAME = 'volley-viewer-gviz';
   var BUNDLE_IDB_STORE = 'bundle';
+  var DEFAULT_TIME_SLOT = '19:15-21:45';
+  var UNDECIDED_LOCATION_LABEL = '場所未定';
+  var SHOW_UNDECIDED_STORAGE_KEY = 'volley_show_undecided';
 
   function getConfig() {
     var cfg = global.CONFIG || {};
@@ -255,6 +258,41 @@
       '\x1f' +
       normalizeTimeSlotForKey(timeSlot)
     );
+  }
+
+  function scheduleTimeGroupKeyFromIso(dateIso, timeSlot) {
+    var parts = String(dateIso || '').slice(0, 10).split('-');
+    if (parts.length !== 3) return '';
+    var month = parseInt(parts[1], 10);
+    var day = parseInt(parts[2], 10);
+    if (!month || !day) return '';
+    return month + '/' + day + '\x1f' + normalizeTimeSlotForKey(timeSlot);
+  }
+
+  function isUndecidedLocation(location) {
+    var loc = String(location || '').trim();
+    if (!loc) return true;
+    var normalized = loc.replace(/[（）()]/g, '');
+    return (
+      normalized === '未定' ||
+      normalized === '場所未定' ||
+      normalized === '場所未設定'
+    );
+  }
+
+  function isUndecidedSchedule(schedule) {
+    return !!(
+      schedule &&
+      (schedule.isTentative || isUndecidedLocation(schedule.location))
+    );
+  }
+
+  function tentativeScheduleId(dateIso) {
+    return 'T-' + String(dateIso || '').replace(/-/g, '');
+  }
+
+  function isTentativeScheduleId(scheduleId) {
+    return /^T-/.test(String(scheduleId || '').trim());
   }
 
   var WEEKDAYS_JP = ['日', '月', '火', '水', '木', '金', '土'];
@@ -605,7 +643,7 @@
       var slotKey = normalizeTimeSlotForKey(row.time_slot);
       if (!eventDate || !slotKey) return;
       var lookupKey = eventDate + '\x1f' + slotKey;
-      var gKey = dateTimeSlotToGroupKey[lookupKey];
+      var gKey = dateTimeSlotToGroupKey[lookupKey] || scheduleTimeGroupKeyFromIso(eventDate, row.time_slot);
       if (!gKey) return;
       var pName = String(row.name || '').trim();
       if (!pName) return;
@@ -866,6 +904,112 @@
     return bundle;
   }
 
+  function startOfToday() {
+    var n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+
+  function iterateFutureDaysInRange(range) {
+    if (!range) return [];
+    var startYear = Number(range.startYear);
+    var startMonth = Number(range.startMonth);
+    var endYear = Number(range.endYear || range.startYear);
+    var endMonth = Number(range.endMonth || range.startMonth);
+    if (!startYear || !startMonth || !endYear || !endMonth) return [];
+    var start = new Date(startYear, startMonth - 1, 1);
+    var end = new Date(endYear, endMonth, 0);
+    var today = startOfToday();
+    var days = [];
+    var cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    while (cur <= end) {
+      if (cur >= today) {
+        days.push(new Date(cur.getFullYear(), cur.getMonth(), cur.getDate()));
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return days;
+  }
+
+  function buildTentativeSchedules(confirmedSchedules, range, participantsByGroup) {
+    var confirmedByIso = {};
+    (confirmedSchedules || []).forEach(function (s) {
+      var iso = String(s.dateIso || '').trim();
+      if (iso) confirmedByIso[iso] = true;
+    });
+    var out = [];
+    iterateFutureDaysInRange(range).forEach(function (d) {
+      var dateIso = formatDateIso(d);
+      if (confirmedByIso[dateIso]) return;
+      var dateLabel = formatScheduleDateLabel(d);
+      var gKey = scheduleTimeGroupKey(dateLabel, DEFAULT_TIME_SLOT);
+      var list = (participantsByGroup && participantsByGroup[gKey]) || [];
+      var counts = { confirmed: 0, pending: 0, absent: 0 };
+      list.forEach(function (p) {
+        if (p.status === STATUS.CONFIRMED) counts.confirmed++;
+        else if (p.status === STATUS.PENDING) counts.pending++;
+        else if (p.status === STATUS.ABSENT) counts.absent++;
+      });
+      var confirmed = counts.confirmed;
+      var pending = counts.pending;
+      var absent = counts.absent;
+      out.push({
+        scheduleId: tentativeScheduleId(dateIso),
+        dateIso: dateIso,
+        dateLabel: dateLabel,
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        day: d.getDate(),
+        location: '',
+        court: '',
+        timeSlot: DEFAULT_TIME_SLOT,
+        orgId: '',
+        orgName: '',
+        scheduleRemark: '',
+        confirmed: confirmed,
+        pending: pending,
+        absent: absent,
+        totalCount: confirmed + pending,
+        highAttendance: confirmed + pending >= HIGH_ATTENDANCE_THRESHOLD,
+        countLabel: formatCountLabel(confirmed, pending, absent),
+        isTentative: true,
+      });
+    });
+    return out;
+  }
+
+  function mergeSchedulesWithTentative(
+    confirmedSchedules,
+    range,
+    participantsByGroup,
+    includeUndecided
+  ) {
+    var list = (confirmedSchedules || []).slice();
+    if (!includeUndecided) {
+      return list.filter(function (s) {
+        return !isUndecidedSchedule(s);
+      });
+    }
+    return list.concat(buildTentativeSchedules(list, range, participantsByGroup));
+  }
+
+  function readShowUndecidedPref() {
+    try {
+      var v = localStorage.getItem(SHOW_UNDECIDED_STORAGE_KEY);
+      if (v === null || v === '') return true;
+      return v !== '0' && v !== 'false';
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function writeShowUndecidedPref(show) {
+    try {
+      localStorage.setItem(SHOW_UNDECIDED_STORAGE_KEY, show ? '1' : '0');
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   global.loadVolleyCalendarBundle = loadVolleyCalendarBundle;
   global.getVolleyTwoMonthRange = getTwoMonthRange;
   global.shouldIncludeNextMonthInVolleyCalendar = shouldIncludeNextMonthInCalendar;
@@ -873,4 +1017,14 @@
   global.volleyStatusLabel = statusLabel;
   global.volleyFormatCountLabel = formatCountLabel;
   global.fetchVolleyParticipations = fetchVolleyParticipations;
+  global.volleyDefaultTimeSlot = DEFAULT_TIME_SLOT;
+  global.volleyUndecidedLocationLabel = UNDECIDED_LOCATION_LABEL;
+  global.volleyIsUndecidedLocation = isUndecidedLocation;
+  global.volleyIsUndecidedSchedule = isUndecidedSchedule;
+  global.volleyTentativeScheduleId = tentativeScheduleId;
+  global.volleyIsTentativeScheduleId = isTentativeScheduleId;
+  global.volleyBuildTentativeSchedules = buildTentativeSchedules;
+  global.volleyMergeSchedulesWithTentative = mergeSchedulesWithTentative;
+  global.volleyReadShowUndecidedPref = readShowUndecidedPref;
+  global.volleyWriteShowUndecidedPref = writeShowUndecidedPref;
 })(typeof window !== 'undefined' ? window : this);
