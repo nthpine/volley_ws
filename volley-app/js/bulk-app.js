@@ -8,11 +8,13 @@
 
   var STATE = {
     members: [],
+    sourceSchedules: [],
     schedules: [],
     participantsByGroup: {},
     range: null,
     bulkRows: [],
     generatedAt: null,
+    showUndecided: true,
   };
 
   function bootBulk() {
@@ -37,6 +39,11 @@
         e.preventDefault();
       }
     });
+    var undecidedToggle = document.getElementById('showUndecidedToggle');
+    if (undecidedToggle) {
+      undecidedToggle.checked = readShowUndecidedPref();
+      undecidedToggle.addEventListener('change', onShowUndecidedToggle);
+    }
     loadBundle({ skipCache: true });
   }
 
@@ -93,10 +100,13 @@
     loadVolleyCalendarBundle({ skipCache: !!opts.skipCache })
       .then(function (data) {
         STATE.members = (data && data.members) || [];
-        STATE.schedules = (data && data.schedules) || [];
+        STATE.sourceSchedules = (data && data.schedules) || [];
         STATE.participantsByGroup = (data && data.participantsByGroup) || {};
         STATE.range = (data && data.range) || null;
         STATE.generatedAt = (data && data.generatedAt) || null;
+        STATE.showUndecided = readShowUndecidedPref();
+        syncUndecidedToggleUi();
+        rebuildVisibleSchedules();
         fillMemberSelect(document.getElementById('bulkMemberSelect').value);
         setLoading(false);
         setRefreshBusy(false);
@@ -121,6 +131,59 @@
     if (currentValue && (STATE.members || []).indexOf(currentValue) >= 0) {
       sel.value = currentValue;
     }
+  }
+
+  function readShowUndecidedPref() {
+    if (typeof volleyReadShowUndecidedPref === 'function') {
+      return volleyReadShowUndecidedPref();
+    }
+    return true;
+  }
+
+  function writeShowUndecidedPref(show) {
+    if (typeof volleyWriteShowUndecidedPref === 'function') {
+      volleyWriteShowUndecidedPref(show);
+    }
+  }
+
+  function isUndecidedSchedule(schedule) {
+    if (typeof volleyIsUndecidedSchedule === 'function') {
+      return volleyIsUndecidedSchedule(schedule);
+    }
+    return !!(schedule && (schedule.isTentative || !String(schedule.location || '').trim()));
+  }
+
+  function rebuildVisibleSchedules() {
+    var source = STATE.sourceSchedules || [];
+    if (typeof volleyMergeSchedulesWithTentative === 'function') {
+      STATE.schedules = volleyMergeSchedulesWithTentative(
+        source,
+        STATE.range,
+        STATE.participantsByGroup,
+        STATE.showUndecided
+      );
+    } else if (STATE.showUndecided) {
+      STATE.schedules = source.slice();
+    } else {
+      STATE.schedules = source.filter(function (s) {
+        return !isUndecidedSchedule(s);
+      });
+    }
+  }
+
+  function syncUndecidedToggleUi() {
+    var toggle = document.getElementById('showUndecidedToggle');
+    if (toggle) {
+      toggle.checked = !!STATE.showUndecided;
+    }
+  }
+
+  function onShowUndecidedToggle(e) {
+    STATE.showUndecided = !!(e && e.target && e.target.checked);
+    writeShowUndecidedPref(STATE.showUndecided);
+    rebuildVisibleSchedules();
+    showBulkMessage('', false);
+    rebuildTable();
   }
 
   function onMemberChange() {
@@ -157,7 +220,11 @@
 
   function formatLocationsHtml(locations, isTentative) {
     if (isTentative) {
-      return '<span class="bulk-loc-tentative">未定</span>';
+      var label =
+        typeof volleyUndecidedLocationLabel === 'string'
+          ? volleyUndecidedLocationLabel
+          : '場所未定';
+      return '<span class="bulk-loc-tentative">' + escapeHtml(label) + '</span>';
     }
     var locs = locations || [];
     if (!locs.length) {
@@ -181,6 +248,7 @@
     var gKey = groupKey(first.dateLabel, first.timeSlot);
     var participation = memberName ? findMemberParticipation(gKey, memberName) : null;
     var locs = uniqueLocations(sorted);
+    var tentative = sorted.every(isUndecidedSchedule) || !locs.length;
     return {
       groupKey: gKey,
       primaryScheduleId: first.scheduleId,
@@ -189,7 +257,7 @@
       timeSlot: String(first.timeSlot || '').trim(),
       locations: locs,
       locationSummary: locs.length ? locs.join(' / ') : '',
-      isTentative: false,
+      isTentative: tentative,
       status: participation ? participation.status : null,
       remark: participation ? participation.remark || '' : '',
       hasRegistration: !!participation,
@@ -371,10 +439,11 @@
         showBulkMessage(n + ' 件保存しました。', false);
         return loadVolleyCalendarBundle({ skipCache: true }).then(function (bundle) {
           STATE.members = (bundle && bundle.members) || STATE.members;
-          STATE.schedules = (bundle && bundle.schedules) || STATE.schedules;
+          STATE.sourceSchedules = (bundle && bundle.schedules) || STATE.sourceSchedules;
           STATE.participantsByGroup =
             (bundle && bundle.participantsByGroup) || STATE.participantsByGroup;
           STATE.range = (bundle && bundle.range) || STATE.range;
+          rebuildVisibleSchedules();
           fillMemberSelect(memberName);
           rebuildTable();
         });

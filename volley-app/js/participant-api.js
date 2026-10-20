@@ -128,11 +128,20 @@
    * @param {string} eventDate YYYY-MM-DD
    * @param {string} timeSlot
    */
-  function saveParticipationRemote(scheduleId, name, status, remark, eventDate, timeSlot) {
+  function resolveScheduleId(scheduleId, dateIso) {
     var sid = String(scheduleId || '').trim();
-    if (!sid) {
-      return Promise.reject(new Error('スケジュール ID が必要です'));
+    if (sid) return sid;
+    return 'T-' + String(dateIso || '').replace(/-/g, '');
+  }
+
+  function isTentativeScheduleId(scheduleId) {
+    if (typeof global.volleyIsTentativeScheduleId === 'function') {
+      return global.volleyIsTentativeScheduleId(scheduleId);
     }
+    return /^T-/.test(String(scheduleId || '').trim());
+  }
+
+  function saveParticipationRemote(scheduleId, name, status, remark, eventDate, timeSlot) {
     var dateIso = String(eventDate || '').trim();
     var slotNorm = normalizeTimeSlotForKey(timeSlot);
     if (!dateIso && !slotNorm) {
@@ -144,6 +153,7 @@
     if (!slotNorm) {
       return Promise.reject(new Error('時間帯が必要です'));
     }
+    var sid = resolveScheduleId(scheduleId, dateIso);
     var now = new Date().toISOString();
     var row = {
       event_date: dateIso,
@@ -160,15 +170,17 @@
         status: status,
         statusLabel: statusLabelFromCode(status),
         remark: remark || '',
-        scheduleId: scheduleId,
+        scheduleId: sid,
       };
-      postGasActionFireAndForget({
-        action: 'saveParticipation',
-        scheduleId: scheduleId,
-        name: name,
-        status: status,
-        remark: remark || '',
-      });
+      if (!isTentativeScheduleId(sid)) {
+        postGasActionFireAndForget({
+          action: 'saveParticipation',
+          scheduleId: sid,
+          name: name,
+          status: status,
+          remark: remark || '',
+        });
+      }
       return { ok: true, result: result };
     });
   }
@@ -182,12 +194,12 @@
     var rows = [];
     var gasUpdates = [];
     (updates || []).forEach(function (u) {
-      var sid = String(u.scheduleId || '').trim();
       var dateIso = String(u.eventDate || '').trim();
       var slotNorm = normalizeTimeSlotForKey(u.timeSlot);
-      if (!sid || !isValidEventDateIso(dateIso) || !slotNorm) {
+      if (!isValidEventDateIso(dateIso) || !slotNorm) {
         return;
       }
+      var sid = resolveScheduleId(u.scheduleId, dateIso);
       rows.push({
         event_date: dateIso,
         time_slot: slotNorm,
@@ -197,25 +209,29 @@
         remark: u.remark || '',
         updated_at: now,
       });
-      gasUpdates.push({
-        scheduleId: sid,
-        dateLabel: u.dateLabel || '',
-        timeSlot: u.timeSlot || '',
-        status: u.status,
-        remark: u.remark || '',
-      });
+      if (!isTentativeScheduleId(sid)) {
+        gasUpdates.push({
+          scheduleId: sid,
+          dateLabel: u.dateLabel || '',
+          timeSlot: u.timeSlot || '',
+          status: u.status,
+          remark: u.remark || '',
+        });
+      }
     });
     if (!rows.length) {
       return Promise.reject(
-        new Error('保存する行がありません（日付・時間帯・scheduleId が必要です）')
+        new Error('保存する行がありません（日付・時間帯が必要です）')
       );
     }
     return upsertParticipations(rows).then(function () {
-      postGasActionFireAndForget({
-        action: 'saveParticipationBulk',
-        memberName: memberName,
-        updates: gasUpdates,
-      });
+      if (gasUpdates.length) {
+        postGasActionFireAndForget({
+          action: 'saveParticipationBulk',
+          memberName: memberName,
+          updates: gasUpdates,
+        });
+      }
       return { ok: true, updated: rows.length };
     });
   }
