@@ -12,7 +12,7 @@
   var BUNDLE_IDB_NAME = 'volley-viewer-gviz';
   var BUNDLE_IDB_STORE = 'bundle';
   var DEFAULT_TIME_SLOT = '19:15-21:45';
-  var UNDECIDED_LOCATION_LABEL = '場所未定';
+  var UNDECIDED_LOCATION_LABEL = '未定';
   var SHOW_UNDECIDED_STORAGE_KEY = 'volley_show_undecided';
 
   function getConfig() {

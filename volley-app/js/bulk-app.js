@@ -223,7 +223,7 @@
       var label =
         typeof volleyUndecidedLocationLabel === 'string'
           ? volleyUndecidedLocationLabel
-          : '場所未定';
+          : '未定';
       return '<span class="bulk-loc-tentative">' + escapeHtml(label) + '</span>';
     }
     var locs = locations || [];

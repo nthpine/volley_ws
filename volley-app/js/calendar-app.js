@@ -279,7 +279,7 @@
   function undecidedLocationLabel() {
     return typeof volleyUndecidedLocationLabel === 'string'
       ? volleyUndecidedLocationLabel
-      : '場所未定';
+      : '未定';
   }
 
   function rebuildVisibleSchedules() {
