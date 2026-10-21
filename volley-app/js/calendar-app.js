@@ -1177,9 +1177,6 @@
       prefillParticipantForm(participant);
       return;
     }
-    document.querySelectorAll('input[name="editStatus"]').forEach(function (input) {
-      input.checked = false;
-    });
     document.getElementById('editRemark').value = '';
   }
 
