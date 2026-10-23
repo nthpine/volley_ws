@@ -7,22 +7,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
 </head>
 <body>
   <header>
     <div class="header-row">
       <div class="header-leading">
         <h1>🏐参加管理</h1>
-        <label class="undecided-toggle" for="showUndecidedToggle" title="未定の日程の表示を切り替え">
-          <input type="checkbox" id="showUndecidedToggle" checked />
-          <span class="undecided-toggle-ui" aria-hidden="true"></span>
-          <span class="undecided-toggle-label">未定</span>
-        </label>
       </div>
       <div class="header-actions">
         <a class="header-link-btn" id="bulkRegisterLink" href="/bulk">一括登録</a>
-        <button type="button" class="refresh-btn" id="refreshCalendarBtn" title="最新データを再取得">更新</button>
+        <div class="header-actions-stack">
+          <button type="button" class="refresh-btn" id="refreshCalendarBtn" title="最新データを再取得">更新</button>
+          <label class="undecided-toggle" for="showUndecidedToggle" title="未定の日程の表示を切り替え">
+            <input type="checkbox" id="showUndecidedToggle" checked />
+            <span class="undecided-toggle-ui" aria-hidden="true"></span>
+            <span class="undecided-toggle-label">未定</span>
+          </label>
+        </div>
       </div>
     </div>
     <p id="periodLabel" hidden></p>
@@ -90,6 +92,6 @@
   <script src="config.js"></script>
   <script src="js/participant-api.js?v=2"></script>
   <script src="js/spreadsheet-loader.js?v=3"></script>
-  <script src="js/calendar-app.js?v=13"></script>
+  <script src="js/calendar-app.js?v=14"></script>
 </body>
 </html>

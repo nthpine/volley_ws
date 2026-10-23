@@ -824,9 +824,17 @@
     if (!isOther && year === cardYear && month === cardMonth) {
       var events = getSchedulesForCardDay(year, month, day, cardYear, cardMonth);
       if (events.length) {
+        var hasBookedGym = false;
         groupSchedulesForDisplay(events).forEach(function (group) {
-          cell.appendChild(createTimeGroupChip(group));
+          var chip = createTimeGroupChip(group);
+          if (chip.classList.contains('event-chip--booked')) {
+            hasBookedGym = true;
+          }
+          cell.appendChild(chip);
         });
+        if (hasBookedGym) {
+          cell.classList.add('day-cell--booked');
+        }
       }
     }
 
@@ -914,6 +922,8 @@
     btn.className = 'event-chip ' + getAttendanceTierClass(activeCount);
     if (displaySchedules.every(isUndecidedSchedule)) {
       btn.classList.add('event-chip--tentative');
+    } else {
+      btn.classList.add('event-chip--booked');
     }
     var timeSlot = primary ? String(primary.timeSlot || '').trim() : '';
     btn.dataset.scheduleId = primary ? String(primary.scheduleId || '') : '';
