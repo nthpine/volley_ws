@@ -824,17 +824,9 @@
     if (!isOther && year === cardYear && month === cardMonth) {
       var events = getSchedulesForCardDay(year, month, day, cardYear, cardMonth);
       if (events.length) {
-        var hasBookedGym = false;
         groupSchedulesForDisplay(events).forEach(function (group) {
-          var chip = createTimeGroupChip(group);
-          if (chip.classList.contains('event-chip--booked')) {
-            hasBookedGym = true;
-          }
-          cell.appendChild(chip);
+          cell.appendChild(createTimeGroupChip(group));
         });
-        if (hasBookedGym) {
-          cell.classList.add('day-cell--booked');
-        }
       }
     }
 
@@ -874,22 +866,17 @@
     var locs = [];
     list.forEach(function (s) {
       var loc = String(s.location || '').trim();
-      if (loc && !seen[loc]) {
-        seen[loc] = true;
-        locs.push(loc);
+      if (!loc || isUndecidedLocation(loc) || seen[loc]) {
+        return;
       }
+      seen[loc] = true;
+      locs.push(loc);
     });
     locs.sort(function (a, b) {
       return a.localeCompare(b, 'ja');
     });
-    if (!locs.length || locs.every(isUndecidedLocation)) {
-      return (
-        '<span class="chip-loc-line">' +
-        locationPinSvgHtml() +
-        '<span class="chip-loc-text">' +
-        escapeHtml(undecidedLocationLabel()) +
-        '</span></span>'
-      );
+    if (!locs.length) {
+      return '';
     }
     return locs
       .map(function (loc) {
@@ -931,6 +918,10 @@
     btn.dataset.timeSlot = timeSlot;
     btn.setAttribute('data-bg-count', String(activeCount));
     applyGaugeStyle(btn, activeCount);
+    var locationHtml = formatCalendarLocationHtml(sorted);
+    if (!locationHtml) {
+      btn.classList.add('event-chip--no-location');
+    }
     btn.setAttribute(
       'aria-label',
       [
@@ -939,7 +930,7 @@
         sorted
           .map(function (s) {
             var loc = String(s.location || '').trim();
-            return loc && !isUndecidedLocation(loc) ? loc : undecidedLocationLabel();
+            return loc && !isUndecidedLocation(loc) ? loc : '';
           })
           .filter(Boolean)
           .join(' '),
@@ -950,7 +941,7 @@
     );
     btn.innerHTML =
       formatChipBgCountHtml(agg) +
-      '<span class="chip-location">' + formatCalendarLocationHtml(sorted) + '</span>' +
+      (locationHtml ? '<span class="chip-location">' + locationHtml + '</span>' : '') +
       '<span class="chip-footer">' +
       '<span class="chip-time">' + formatBulkTimeSlotHtml(timeSlot) + '</span>' +
       '<span class="chip-counts">' + formatChipCountHtml(agg) + '</span>' +
