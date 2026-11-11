@@ -1258,6 +1258,16 @@
     });
   }
 
+  function compareParticipantsByUpdatedAt(a, b) {
+    if (typeof volleyCompareParticipantsByUpdatedAt === 'function') {
+      return volleyCompareParticipantsByUpdatedAt(a, b);
+    }
+    var aAt = String((a && a.updatedAt) || '');
+    var bAt = String((b && b.updatedAt) || '');
+    if (aAt !== bAt) return aAt < bAt ? -1 : 1;
+    return String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'ja');
+  }
+
   function applyParticipantSaveToState(data) {
     var result = data && data.result;
     if (!result || !STATE.currentGroupKey) {
@@ -1267,22 +1277,20 @@
     var status = result.status;
     var statusLabel = result.statusLabel || statusLabelFromCode(status);
     var remark = result.remark || '';
+    var updatedAt = result.updatedAt || new Date().toISOString();
     var list = (STATE.participantsByGroup[STATE.currentGroupKey] || []).slice();
     var found = false;
     list = list.map(function (p) {
       if (p.name === name) {
         found = true;
-        return { name: name, status: status, statusLabel: statusLabel, remark: remark };
+        return { name: name, status: status, statusLabel: statusLabel, remark: remark, updatedAt: updatedAt };
       }
       return p;
     });
     if (!found) {
-      list.push({ name: name, status: status, statusLabel: statusLabel, remark: remark });
+      list.push({ name: name, status: status, statusLabel: statusLabel, remark: remark, updatedAt: updatedAt });
     }
-    list.sort(function (a, b) {
-      if (a.status !== b.status) return a.status - b.status;
-      return a.name.localeCompare(b.name, 'ja');
-    });
+    list.sort(compareParticipantsByUpdatedAt);
     STATE.participantsByGroup[STATE.currentGroupKey] = list;
     STATE.lastParticipants = list.slice();
 

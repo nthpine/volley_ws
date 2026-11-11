@@ -636,6 +636,13 @@
     return map;
   }
 
+  function compareParticipantsByUpdatedAt(a, b) {
+    var aAt = String((a && a.updatedAt) || '');
+    var bAt = String((b && b.updatedAt) || '');
+    if (aAt !== bAt) return aAt < bAt ? -1 : 1;
+    return String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'ja');
+  }
+
   function buildParticipantsByTimeGroupFromDb(participations, dateTimeSlotToGroupKey) {
     var byGroupName = {};
     (participations || []).forEach(function (row) {
@@ -653,14 +660,14 @@
       if (!byGroupName[gKey]) byGroupName[gKey] = {};
       if (
         !byGroupName[gKey][pName] ||
-        updatedAt >= (byGroupName[gKey][pName]._updatedAt || '')
+        updatedAt >= (byGroupName[gKey][pName].updatedAt || '')
       ) {
         byGroupName[gKey][pName] = {
           name: pName,
           status: st,
           statusLabel: statusLabel(st),
           remark: remark,
-          _updatedAt: updatedAt,
+          updatedAt: updatedAt,
         };
       }
     });
@@ -668,13 +675,9 @@
     Object.keys(byGroupName).forEach(function (gKey2) {
       var list = [];
       Object.keys(byGroupName[gKey2]).forEach(function (name) {
-        delete byGroupName[gKey2][name]._updatedAt;
         list.push(byGroupName[gKey2][name]);
       });
-      list.sort(function (a, b) {
-        if (a.status !== b.status) return a.status - b.status;
-        return a.name.localeCompare(b.name, 'ja');
-      });
+      list.sort(compareParticipantsByUpdatedAt);
       result[gKey2] = list;
     });
     return result;
@@ -1015,6 +1018,8 @@
   global.shouldIncludeNextMonthInVolleyCalendar = shouldIncludeNextMonthInCalendar;
   global.volleyScheduleTimeGroupKey = scheduleTimeGroupKey;
   global.volleyStatusLabel = statusLabel;
+  global.volleyCompareParticipantsByUpdatedAt = compareParticipantsByUpdatedAt;
+  global.volleyBuildParticipantsByTimeGroupFromDb = buildParticipantsByTimeGroupFromDb;
   global.volleyFormatCountLabel = formatCountLabel;
   global.fetchVolleyParticipations = fetchVolleyParticipations;
   global.volleyDefaultTimeSlot = DEFAULT_TIME_SLOT;

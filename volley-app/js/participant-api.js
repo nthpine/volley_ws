@@ -171,6 +171,7 @@
         statusLabel: statusLabelFromCode(status),
         remark: remark || '',
         scheduleId: sid,
+        updatedAt: now,
       };
       if (!isTentativeScheduleId(sid)) {
         postGasActionFireAndForget({
