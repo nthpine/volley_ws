@@ -49,6 +49,10 @@
   --glow-cyan: 0 0 0 3px rgba(79, 70, 229, 0.14);
   --glow-violet: 0 0 0 3px rgba(79, 70, 229, 0.14);
   --glow-green: 0 0 0 3px rgba(21, 128, 61, 0.14);
+  /* 体育館が確保できた日程カード（未定チップに使っていた黄） */
+  --gym-booked-bg: var(--bg-subtle);
+  --gym-booked-bg-hover: #f8e8c4;
+  --gym-booked-border: var(--border-strong);
   --shadow: 0 2px 0 rgba(30, 27, 75, 0.06);
   --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Meiryo", sans-serif;
   --font-display: var(--font-body);
@@ -119,13 +123,20 @@ header h1 {
 .undecided-toggle {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.4rem;
+  min-height: 38px;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
   user-select: none;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
+  font-family: var(--font-body);
   color: var(--text-secondary);
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .undecided-toggle input {
@@ -138,8 +149,8 @@ header h1 {
 
 .undecided-toggle-ui {
   position: relative;
-  width: 2.15rem;
-  height: 1.2rem;
+  width: 2.4rem;
+  height: 1.35rem;
   flex-shrink: 0;
   border-radius: 999px;
   background: var(--track);
@@ -152,8 +163,8 @@ header h1 {
   position: absolute;
   top: 1px;
   left: 1px;
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 2px rgba(30, 27, 75, 0.18);
@@ -166,7 +177,7 @@ header h1 {
 }
 
 .undecided-toggle input:checked + .undecided-toggle-ui::after {
-  transform: translateX(0.88rem);
+  transform: translateX(0.98rem);
 }
 
 .undecided-toggle input:focus-visible + .undecided-toggle-ui {
@@ -179,8 +190,15 @@ header h1 {
 
 .header-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
+}
+
+.header-actions-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
 }
 
 .refresh-btn,
@@ -435,13 +453,30 @@ main {
 
 .event-chip.event-chip--tentative {
   border-style: dashed;
+  background: var(--card);
 }
 
-.event-chip.event-chip--tentative .chip-location,
-.event-chip.event-chip--tentative .chip-loc-text {
-  color: var(--muted);
-  font-style: italic;
-  font-weight: 600;
+.event-chip.event-chip--booked {
+  background: var(--gym-booked-bg);
+  border-color: var(--gym-booked-border);
+}
+
+.event-chip.event-chip--booked:hover {
+  background: var(--gym-booked-bg-hover);
+  border-color: var(--gym-booked-border);
+}
+
+.event-chip.event-chip--booked:active {
+  background: #f3d9a4;
+}
+
+.event-chip.event-chip--no-location {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "count"
+    "time"
+    "foot"
+    "meter";
 }
 
 /* 参加人数ゲージ: 12 分割、1 マス = 1 人。3 人ごとに色が変わる。
