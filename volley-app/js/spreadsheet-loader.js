@@ -432,6 +432,72 @@
     );
   }
 
+  function parseReservedAt(value) {
+    if (value == null || value === '') return null;
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? null : value;
+    }
+    var s = String(value).trim();
+    if (!s) return null;
+
+    var gviz = s.match(
+      /^Date\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)(?:\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+))?(?:\s*,\s*(-?\d+))?\s*\)$/
+    );
+    if (gviz) {
+      var gd = new Date(
+        parseInt(gviz[1], 10),
+        parseInt(gviz[2], 10),
+        parseInt(gviz[3], 10),
+        parseInt(gviz[4] || '0', 10),
+        parseInt(gviz[5] || '0', 10),
+        parseInt(gviz[6] || '0', 10),
+        parseInt(gviz[7] || '0', 10)
+      );
+      return isNaN(gd.getTime()) ? null : gd;
+    }
+
+    var hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(s);
+    var stamped = s.match(
+      /^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/
+    );
+    if (stamped) {
+      if (hasZone) {
+        var iso = new Date(s);
+        return isNaN(iso.getTime()) ? null : iso;
+      }
+      var ld = new Date(
+        parseInt(stamped[1], 10),
+        parseInt(stamped[2], 10) - 1,
+        parseInt(stamped[3], 10),
+        parseInt(stamped[4] || '0', 10),
+        parseInt(stamped[5] || '0', 10),
+        parseInt(stamped[6] || '0', 10)
+      );
+      return isNaN(ld.getTime()) ? null : ld;
+    }
+
+    return null;
+  }
+
+  function formatReservedAtLabel(value) {
+    var d = value instanceof Date && !isNaN(value.getTime()) ? value : parseReservedAt(value);
+    if (!d) return '';
+    var hh = ('0' + d.getHours()).slice(-2);
+    var mm = ('0' + d.getMinutes()).slice(-2);
+    return (
+      d.getMonth() +
+      1 +
+      '/' +
+      d.getDate() +
+      '(' +
+      WEEKDAYS_JP[d.getDay()] +
+      ') ' +
+      hh +
+      ':' +
+      mm
+    );
+  }
+
   function findOrgIdColumnIndex(headers) {
     var remarkCol = findScheduleRemarkIndex(headers);
     var named = headers.indexOf('利用者番号');
@@ -750,6 +816,7 @@
     var idxCourt = headers.indexOf('面');
     var idxTime = headers.indexOf('時間帯');
     var orgCol = findOrgIdColumnIndex(headers);
+    var idxAdded = headers.indexOf('追加日時');
     var sid = canonicalScheduleId(row[idxSid]);
     var orgId = normalizeOrgId(row[orgCol]);
     var org = configMap[orgId] || { orgId: orgId, orgName: '' };
@@ -761,6 +828,7 @@
       orgId: org.orgId,
       orgName: org.orgName,
       scheduleRemark: '',
+      reservedAt: idxAdded >= 0 ? parseReservedAt(row[idxAdded]) || '' : '',
     };
   }
 
@@ -815,6 +883,7 @@
         orgId: base.orgId,
         orgName: base.orgName,
         scheduleRemark: base.scheduleRemark,
+        reservedAt: base.reservedAt || '',
         confirmed: confirmed,
         pending: pending,
         absent: absent,
@@ -968,6 +1037,7 @@
         orgId: '',
         orgName: '',
         scheduleRemark: '',
+        reservedAt: '',
         confirmed: confirmed,
         pending: pending,
         absent: absent,
@@ -1032,4 +1102,6 @@
   global.volleyMergeSchedulesWithTentative = mergeSchedulesWithTentative;
   global.volleyReadShowUndecidedPref = readShowUndecidedPref;
   global.volleyWriteShowUndecidedPref = writeShowUndecidedPref;
+  global.volleyParseReservedAt = parseReservedAt;
+  global.volleyFormatReservedAtLabel = formatReservedAtLabel;
 })(typeof window !== 'undefined' ? window : this);

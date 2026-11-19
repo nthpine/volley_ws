@@ -494,6 +494,25 @@
         }),
       },
     ];
+    var reservedLabels = list.map(function (s) {
+      var fn =
+        typeof volleyFormatReservedAtLabel === 'function'
+          ? volleyFormatReservedAtLabel
+          : null;
+      return fn ? fn(s && s.reservedAt) : '';
+    });
+    if (
+      reservedLabels.some(function (label) {
+        return !!label;
+      })
+    ) {
+      rowDefs.push({
+        label: '予約日時：',
+        values: reservedLabels.map(function (label) {
+          return label || '—';
+        }),
+      });
+    }
     var html =
       '<div class="schedule-group-grid schedule-group-grid--meta" style="--sg-cols:' +
       cols +
